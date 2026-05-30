@@ -6,8 +6,12 @@ export function adminClient(): SupabaseClient {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-export async function decryptSecret(db: SupabaseClient, cipher: Uint8Array): Promise<string> {
-  const { data, error } = await db.rpc('decrypt_secret_b64', { cipher_b64: btoa(String.fromCharCode(...cipher)) })
+/**
+ * Decrypts a bytea column value via server-side pgcrypto.
+ * PostgREST returns bytea as a hex string (e.g. "\xDEADBEEF..."); pass it through as-is.
+ */
+export async function decryptSecret(db: SupabaseClient, cipherHex: string): Promise<string> {
+  const { data, error } = await db.rpc('decrypt_secret_hex', { cipher_hex: cipherHex })
   if (error) throw error
   return data as string
 }

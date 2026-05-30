@@ -50,7 +50,7 @@ Deno.serve(async () => {
     }
 
     // 6. Decrypt SMTP creds
-    const smtpPass = await decryptSecret(db, mb.smtp_pass_encrypted as Uint8Array)
+    const smtpPass = await decryptSecret(db, mb.smtp_pass_encrypted as unknown as string)
     const creds: SmtpCreds = {
       host: mb.smtp_host, port: mb.smtp_port,
       username: mb.smtp_user, password: smtpPass,
