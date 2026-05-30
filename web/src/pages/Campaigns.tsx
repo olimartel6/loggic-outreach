@@ -21,6 +21,7 @@ export default function Campaigns() {
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Nom de la campagne" className="border rounded px-3 py-1.5 text-sm"/>
           <button className="bg-slate-900 text-white text-sm px-3 py-1.5 rounded">+ Nouvelle</button>
         </form>
+        {create.isError && <p className="text-red-600 text-xs mt-2">{(create.error as Error).message}</p>}
       </div>
       {isLoading ? <p>Chargement…</p> : (
         <div className="bg-white rounded-xl border divide-y">
