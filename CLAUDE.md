@@ -1,0 +1,52 @@
+# Loggic Outreach — Claude Code workflow
+
+This project is an internal cold-email automation system used by Oli and his cofounder Charles-Antoine to sell loyalty apps. App lives at https://logiccsupplies.ca/outreach/. Backend: Supabase project `tytfjnlclvmsjaofpnmq`.
+
+## When Oli or CA asks you to generate a lead CSV
+
+The CSV needs:
+- Standard columns: `email,first_name,last_name,company,demo_link,custom1`
+- Personalization columns: `custom_subject` (one-line subject) and `custom_body` (full email body, multi-line)
+
+The campaign's sequence step template will be just `{custom_subject}` and `{custom_body}`, so each row controls its own email content. Write each `custom_body` as if it's the email a human would send — short, specific to the business, no obvious template feel.
+
+### Dedup workflow (CRITICAL — do NOT skip)
+
+Before adding a prospect, fetch the dedup list:
+
+```bash
+curl -s 'https://tytfjnlclvmsjaofpnmq.supabase.co/rest/v1/contacted_domains?select=domain' \
+  -H 'apikey: SB_ANON_KEY' \
+  -H 'Authorization: Bearer SB_ANON_KEY'
+```
+
+(Get `SB_ANON_KEY` from `~/Desktop/loggic-outreach/.env.prod` line `SUPABASE_ANON_KEY=`.)
+
+This returns JSON like `[{"domain":"urbania-beaute.com"}, ...]`. For each prospect you're about to add:
+1. Extract domain from the prospect's email (or website)
+2. Lowercase it
+3. If it's in the dedup list → SKIP, do not add
+4. If not → include in CSV
+
+**Dedup is by domain**, not by exact email. If `info@urbania-beaute.com` was contacted, then `contact@urbania-beaute.com` is ALSO blocked.
+
+### CSV file location
+
+Save the CSV to `~/Desktop/leads-<topic>-<YYYY-MM-DD>.csv` so it shows up on Desktop and is easy to import via drag-drop in the Loggic Outreach UI.
+
+## When Oli asks "send a test email"
+
+The lead state in prod is in flux during testing. Use the `q()` Python helper pattern above to query/reset state. Common ops:
+- Re-queue lead: `update leads set status='queued', current_step=0, next_send_at=now(), thread_message_id=null, last_subject=null, mailbox_id=null`
+- Force send-tick: `curl -X POST https://tytfjnlclvmsjaofpnmq.supabase.co/functions/v1/send-tick -H "Authorization: Bearer $SRK"` (where SRK = `SUPABASE_SERVICE_ROLE_KEY` from `.env.prod`)
+- Logs: query the `function_logs` table via the Management API analytics endpoint (see `supabase/functions/` README if written).
+
+## Schedule
+
+Production default: Mon-Fri 8h-17h America/Toronto, 20 emails/day per user. For dev/test, the schedule may be opened to 7/7 — check `campaigns.schedule` before assuming.
+
+## Don't touch
+
+- Production Supabase project (3 OTHER projects exist: `bulk-coach`, `roulette`, `SkillForge` — NOT this one. Only `loggic-outreach` is in scope here).
+- The `private.app_secrets` table values. Rotate via re-encryption migration if needed.
+- Live `mailboxes` rows other than your own (each user owns their own row).
