@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Campaigns from './pages/Campaigns'
 import CampaignDetail from './pages/CampaignDetail'
+import Leads from './pages/Leads'
 
 const qc = new QueryClient()
 
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/:id" element={<CampaignDetail />} />
+              <Route path="/leads" element={<Leads />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
