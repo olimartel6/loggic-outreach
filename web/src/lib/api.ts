@@ -72,6 +72,26 @@ export const mailboxesApi = {
   },
 }
 
+export const statsApi = {
+  overview: async () => {
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0)
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
+    const [sentToday, repliesWeek, queue] = await Promise.all([
+      supabase.from('sends').select('id', { count: 'exact', head: true }).gte('sent_at', todayStart.toISOString()).eq('status', 'sent'),
+      supabase.from('replies').select('id', { count: 'exact', head: true }).gte('detected_at', weekAgo.toISOString()),
+      supabase.from('leads').select('id', { count: 'exact', head: true }).in('status', ['queued','in_progress']),
+    ])
+    const totalSent = (await supabase.from('sends').select('id', { count: 'exact', head: true }).eq('status','sent')).count ?? 0
+    const totalReplies = (await supabase.from('replies').select('id', { count: 'exact', head: true })).count ?? 0
+    return {
+      sentToday: sentToday.count ?? 0,
+      repliesWeek: repliesWeek.count ?? 0,
+      queue: queue.count ?? 0,
+      replyRate: totalSent > 0 ? (totalReplies / totalSent) * 100 : 0,
+    }
+  },
+}
+
 export const settingsApi = {
   upsertMailbox: async (input: {
     display_name: string, email: string,
