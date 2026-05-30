@@ -59,7 +59,7 @@ export default function CampaignDetail() {
       ))}
       <button
         disabled={upsert.isPending}
-        onClick={() => upsert.mutate({ campaign_id: id!, step_order: nextOrder, delay_days: nextOrder === 0 ? 0 : 4, subject_template: '', body_template: '' })}
+        onClick={() => upsert.mutate({ campaign_id: id!, step_order: nextOrder, delay_days: nextOrder === 0 ? 0 : 4, subject_template: '{custom_subject}', body_template: '{custom_body}' })}
         className="w-full border-2 border-dashed border-slate-300 text-slate-500 py-4 rounded-xl hover:border-slate-500 disabled:opacity-40"
       >
         + Ajouter une étape
