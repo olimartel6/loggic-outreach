@@ -41,10 +41,10 @@ export default function CampaignDetail() {
           {camp.status === 'active' && <button onClick={() => toggleStatus.mutate('paused')} className="bg-yellow-600 text-white px-3 py-1.5 rounded">Mettre en pause</button>}
         </div>
       </div>
-      {(upsert.isError || remove.isError || toggleStatus.isError) && (
+      {(upsert.isError || remove.isError || toggleStatus.isError || importLeads.isError) && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-2 rounded mb-4">
-          {(upsert.error || remove.error || toggleStatus.error) instanceof Error
-            ? ((upsert.error || remove.error || toggleStatus.error) as Error).message
+          {(upsert.error || remove.error || toggleStatus.error || importLeads.error) instanceof Error
+            ? ((upsert.error || remove.error || toggleStatus.error || importLeads.error) as Error).message
             : 'Erreur'}
         </div>
       )}
