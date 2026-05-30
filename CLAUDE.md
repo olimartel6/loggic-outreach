@@ -10,6 +10,8 @@ The CSV needs:
 
 The campaign's sequence step template will be just `{custom_subject}` and `{custom_body}`, so each row controls its own email content. Write each `custom_body` as if it's the email a human would send — short, specific to the business, no obvious template feel.
 
+**`demo_link`: always leave empty.** Demo creation is a separate batch step Oli runs after receiving the CSV (the `logicsupplies` tenant-build pipeline lives on his Mac). The `custom_body` CTA should NOT reference a demo link — propose a short call or ask for a reply instead.
+
 ### Dedup workflow (CRITICAL — do NOT skip)
 
 Before adding a prospect, fetch the dedup list:

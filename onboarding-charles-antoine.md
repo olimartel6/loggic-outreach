@@ -133,14 +133,16 @@ Si tu skips trop (>50% du batch), prends note et propose un autre segment ou vil
 - "tu" pas "vous" pour des commerces de proximité
 - Court (3-6 phrases max le custom_body)
 - Mentionne UN détail spécifique au business (un service, un avis client, un quartier, un produit, l'année de fondation, etc.) — pas de "j'ai vu votre business"
-- CTA: inviter à voir un demo en 1 ligne, sans pricing
+- CTA: proposer un échange court (5 min, Zoom ou téléphone) ou demander une réponse — PAS "voir une démo" car le lien démo se rajoute après
 - Signature: `Olivier — Loggic` (ou `Charles-Antoine — Loggic` selon qui demande)
+
+**`demo_link`: laisse TOUJOURS vide.** Oli build les démos personnalisées en batch après réception du CSV (séparation des responsabilités: génération de prospects = ton job, construction de démos = job d'Oli sur son Mac où le repo `logicsupplies` est installé). Ne mentionne PAS de lien démo dans le `custom_body` non plus, sinon ça crée une référence à un truc qui n'existe pas.
 
 **JAMAIS:**
 - Mentionner un prix dans le custom_body (politique stricte Oli)
 - Dire "j'ai remarqué que vous n'avez pas X mais que Y" (ton condescendant, banni)
 - Inventer des stats ou des features
-- Lien démo si t'en as pas un de prêt — laisse `demo_link` vide
+- Inventer un `demo_link` ou pointer vers `demo.logiccsupplies.ca` sans vérifier — laisse VIDE
 
 **Custom_subject:** 5-9 mots, accroche spécifique. Exemples:
 - "Une question pour {nom du commerce}"
