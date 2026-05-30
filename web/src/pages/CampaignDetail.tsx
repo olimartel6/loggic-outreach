@@ -22,7 +22,7 @@ export default function CampaignDetail() {
   })
 
   if (!camp) return <p>Chargement…</p>
-  const nextOrder = steps ? steps.length : 0
+  const nextOrder = steps && steps.length > 0 ? Math.max(...steps.map(s => s.step_order)) + 1 : 0
   return (
     <div>
       <div className="flex justify-between items-start mb-6">
@@ -52,8 +52,9 @@ export default function CampaignDetail() {
         />
       ))}
       <button
+        disabled={upsert.isPending}
         onClick={() => upsert.mutate({ campaign_id: id!, step_order: nextOrder, delay_days: nextOrder === 0 ? 0 : 4, subject_template: '', body_template: '' })}
-        className="w-full border-2 border-dashed border-slate-300 text-slate-500 py-4 rounded-xl hover:border-slate-500"
+        className="w-full border-2 border-dashed border-slate-300 text-slate-500 py-4 rounded-xl hover:border-slate-500 disabled:opacity-40"
       >
         + Ajouter une étape
       </button>
