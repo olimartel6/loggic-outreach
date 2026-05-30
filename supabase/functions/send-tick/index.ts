@@ -21,6 +21,8 @@ Deno.serve(async () => {
       .eq('mailbox_id', mb.id).gte('sent_at', todayStart.toISOString()).eq('status', 'sent')
 
     // Use campaign's per-user daily limit (use any active campaign's schedule — they share).
+    // MVP assumption: at most one active campaign at a time. If two are active, the
+    // schedule of whichever row Postgres returns first wins. Track in TODO if it becomes an issue.
     const { data: anyActive } = await db.from('campaigns').select('schedule').eq('status', 'active').limit(1).maybeSingle()
     const limit = (anyActive?.schedule as any)?.daily_limit_per_user ?? 20
     if ((sentToday ?? 0) >= limit) { results[mb.email] = 0; continue }
