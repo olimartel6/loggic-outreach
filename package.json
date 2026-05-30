@@ -1,0 +1,11 @@
+{
+  "name": "loggic-outreach",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": ["web"],
+  "scripts": {
+    "dev": "npm --workspace web run dev",
+    "build": "npm --workspace web run build",
+    "test:functions": "cd supabase/functions && deno test --allow-all"
+  }
+}

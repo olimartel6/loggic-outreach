@@ -1,4 +1,7 @@
-.superpowers/
 node_modules/
-.env
 dist/
+.env
+.env.local
+.superpowers/
+supabase/.branches
+supabase/.temp
