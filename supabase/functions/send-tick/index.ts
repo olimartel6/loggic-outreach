@@ -105,14 +105,23 @@ Deno.serve(async () => {
       }).eq('id', lead.id)
 
       // 10. ALSO bump next_send_at on OTHER queued leads for this mailbox to jitter them.
-      await db.rpc('jitter_next_for_mailbox', { p_mailbox_id: mb.id, p_jitter_seconds: 180 + Math.floor(Math.random() * 300) })
-        .catch(() => {}) // best effort
+      // (best effort — RPC builder isn't a real Promise so .catch() is not chainable)
+      try {
+        await db.rpc('jitter_next_for_mailbox', { p_mailbox_id: mb.id, p_jitter_seconds: 180 + Math.floor(Math.random() * 300) })
+      } catch { /* ignore */ }
 
       results[mb.email] = 1
     } catch (e) {
-      await db.from('sends').insert({ lead_id: lead.id, step_id: step.id, mailbox_id: mb.id, status: 'failed', error_text: String(e) })
-      await db.from('leads').update({ status: 'failed' }).eq('id', lead.id)
-      results[mb.email] = -1
+      // If we already logged a 'sent' row for this lead in this iteration, don't double-log.
+      const { data: lastSend } = await db.from('sends').select('status').eq('lead_id', lead.id).eq('step_id', step.id).order('sent_at', { ascending: false }).limit(1).maybeSingle()
+      if (lastSend?.status !== 'sent') {
+        await db.from('sends').insert({ lead_id: lead.id, step_id: step.id, mailbox_id: mb.id, status: 'failed', error_text: String(e) })
+        await db.from('leads').update({ status: 'failed' }).eq('id', lead.id)
+        results[mb.email] = -1
+      } else {
+        // Send succeeded but post-send bookkeeping crashed. Don't mark as failed.
+        results[mb.email] = 1
+      }
     }
   }
 
