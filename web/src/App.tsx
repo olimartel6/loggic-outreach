@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Campaigns from './pages/Campaigns'
+import CampaignDetail from './pages/CampaignDetail'
 
 const qc = new QueryClient()
 
@@ -25,6 +26,7 @@ export default function App() {
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/campaigns/:id" element={<CampaignDetail />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
