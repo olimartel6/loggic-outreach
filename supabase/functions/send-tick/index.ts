@@ -49,8 +49,15 @@ Deno.serve(async () => {
       continue
     }
 
-    // 6. Decrypt SMTP creds
-    const smtpPass = await decryptSecret(db, mb.smtp_pass_encrypted as unknown as string)
+    // 6. Decrypt SMTP creds (separate try since failure must not nuke the handler)
+    let smtpPass: string
+    try {
+      smtpPass = await decryptSecret(db, mb.smtp_pass_encrypted as unknown as string)
+    } catch (e) {
+      await db.from('mailboxes').update({ status: 'error', last_error: `decrypt failed: ${e}` }).eq('id', mb.id)
+      results[mb.email] = -1
+      continue
+    }
     const creds: SmtpCreds = {
       host: mb.smtp_host, port: mb.smtp_port,
       username: mb.smtp_user, password: smtpPass,
