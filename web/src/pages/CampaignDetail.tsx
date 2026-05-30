@@ -65,7 +65,7 @@ export default function CampaignDetail() {
         + Ajouter une étape
       </button>
       <h2 className="text-lg font-semibold mt-8 mb-3">Leads ({leads?.length ?? 0})</h2>
-      <CsvUploader onParsed={l => importLeads.mutate(l)} />
+      <CsvUploader onParsed={l => importLeads.mutate(l)} disabled={importLeads.isPending} />
       {importLeads.isSuccess && <p className="text-green-600 text-xs mt-2">{importLeads.data?.length ?? 0} leads importés (doublons ignorés).</p>}
       <div className="mt-4 bg-white border rounded-xl divide-y max-h-96 overflow-auto">
         {leads?.map(l => (

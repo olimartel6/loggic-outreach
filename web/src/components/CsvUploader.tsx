@@ -10,18 +10,23 @@ export type LeadDraft = {
   custom1?: string
 }
 
-export function CsvUploader({ onParsed }: { onParsed: (leads: LeadDraft[]) => void }) {
+export function CsvUploader({ onParsed, disabled }: { onParsed: (leads: LeadDraft[]) => void, disabled?: boolean }) {
   const [error, setError] = useState<string | null>(null)
+  const [parsing, setParsing] = useState(false)
+  const busy = disabled || parsing
   return (
-    <label className="block border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-slate-500">
+    <label className={`block border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-slate-500 ${busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
       <input
         type="file"
         accept=".csv"
         className="hidden"
+        disabled={busy}
         onChange={e => {
           const f = e.target.files?.[0]
-          if (!f) return
+          const input = e.target
+          if (!f || busy) { input.value = ''; return }
           setError(null)
+          setParsing(true)
           Papa.parse<Record<string, string>>(f, {
             header: true,
             skipEmptyLines: true,
@@ -41,12 +46,18 @@ export function CsvUploader({ onParsed }: { onParsed: (leads: LeadDraft[]) => vo
               }
               if (leads.length === 0) setError('Aucun email valide trouvé.')
               else onParsed(leads)
+              setParsing(false)
+              input.value = ''
             },
-            error: e => setError(e.message),
+            error: e => {
+              setError(e.message)
+              setParsing(false)
+              input.value = ''
+            },
           })
         }}
       />
-      <div className="text-sm font-semibold">Glisse un CSV ici ou clique</div>
+      <div className="text-sm font-semibold">{parsing ? 'Lecture du CSV…' : 'Glisse un CSV ici ou clique'}</div>
       <div className="text-xs text-slate-500 mt-1">Colonnes attendues: email, first_name, last_name, company, demo_link, custom1</div>
       {error && <div className="text-red-600 text-xs mt-2">{error}</div>}
     </label>
