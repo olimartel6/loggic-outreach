@@ -5,3 +5,4 @@ dist/
 .superpowers/
 supabase/.branches
 supabase/.temp
+.env.prod
