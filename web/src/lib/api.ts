@@ -45,12 +45,12 @@ export const leadsApi = {
     if (error) throw error
     return data
   },
-  listAll: async (filter?: Lead['status']) => {
+  listAll: async (filter?: Lead['status']): Promise<(Lead & { campaigns: { name: string } | null })[]> => {
     let q = supabase.from('leads').select('*, campaigns(name)').order('created_at', { ascending: false })
     if (filter) q = q.eq('status', filter)
     const { data, error } = await q
     if (error) throw error
-    return data
+    return (data ?? []) as (Lead & { campaigns: { name: string } | null })[]
   },
   bulkInsert: async (campaignId: string, leads: { email: string, first_name?: string, last_name?: string, company?: string, demo_link?: string, custom1?: string }[]) => {
     const rows = leads.map(l => ({ ...l, campaign_id: campaignId, status: 'queued' as const, current_step: 0, next_send_at: new Date().toISOString() }))

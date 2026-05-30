@@ -20,7 +20,7 @@ const statusColor: Record<Lead['status'], string> = {
   failed: 'text-red-600',
 }
 
-export function LeadsTable({ leads }: { leads: (Lead & { campaigns?: { name: string } | null })[] }) {
+export function LeadsTable({ leads }: { leads: (Lead & { campaigns: { name: string } | null })[] }) {
   return (
     <table className="w-full text-sm bg-white border rounded-xl overflow-hidden">
       <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
