@@ -4,9 +4,11 @@ export type Vars = {
   company: string
   demo_link: string
   custom1: string
+  custom_subject: string
+  custom_body: string
 }
 
-const KNOWN: (keyof Vars)[] = ['first_name', 'last_name', 'company', 'demo_link', 'custom1']
+const KNOWN: (keyof Vars)[] = ['first_name', 'last_name', 'company', 'demo_link', 'custom1', 'custom_subject', 'custom_body']
 
 export function render(template: string, vars: Vars, opts?: { footer?: string }): string {
   let out = template

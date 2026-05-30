@@ -72,6 +72,8 @@ Deno.serve(async () => {
       company: lead.company ?? '',
       demo_link: lead.demo_link ?? '',
       custom1: lead.custom1 ?? '',
+      custom_subject: lead.custom_subject ?? '',
+      custom_body: lead.custom_body ?? '',
     }
     const subject = render(step.subject_template, vars)
     const body = render(step.body_template, vars, { footer: FOOTER })
