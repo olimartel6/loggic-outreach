@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './lib/auth'
 import { Layout } from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import Campaigns from './pages/Campaigns'
 
 const qc = new QueryClient()
 
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/campaigns" element={<Campaigns />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
