@@ -20,7 +20,13 @@ Deno.serve(async () => {
         const threadIds = extractThreadIds({ inReplyTo: m.inReplyTo, references: m.references })
         if (threadIds.length === 0 && !isBounce(m.subject, m.from)) continue
         // Match to a lead.
-        const { data: lead } = await db.from('leads').select('id, status').in('thread_message_id', threadIds.length > 0 ? threadIds : ['__none__']).maybeSingle()
+        const { data: lead } = await db.from('leads')
+          .select('id, status')
+          .in('thread_message_id', threadIds.length > 0 ? threadIds : ['__none__'])
+          .eq('mailbox_id', mb.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
         if (lead && lead.status !== 'replied' && lead.status !== 'bounced') {
           if (isBounce(m.subject, m.from)) {
             await db.from('leads').update({ status: 'bounced' }).eq('id', lead.id)
