@@ -8,6 +8,8 @@ export type LeadDraft = {
   company?: string
   demo_link?: string
   custom1?: string
+  custom_subject?: string
+  custom_body?: string
 }
 
 export function CsvUploader({ onParsed, disabled }: { onParsed: (leads: LeadDraft[]) => void, disabled?: boolean }) {
@@ -42,6 +44,8 @@ export function CsvUploader({ onParsed, disabled }: { onParsed: (leads: LeadDraf
                   company: row.company?.trim() || row.company_name?.trim() || undefined,
                   demo_link: row.demo_link?.trim() || undefined,
                   custom1: row.custom1?.trim() || undefined,
+                  custom_subject: row.custom_subject?.trim() || undefined,
+                  custom_body: row.custom_body?.trim() || undefined,
                 })
               }
               if (leads.length === 0) setError('Aucun email valide trouvé.')
@@ -58,7 +62,7 @@ export function CsvUploader({ onParsed, disabled }: { onParsed: (leads: LeadDraf
         }}
       />
       <div className="text-sm font-semibold">{parsing ? 'Lecture du CSV…' : 'Glisse un CSV ici ou clique'}</div>
-      <div className="text-xs text-slate-500 mt-1">Colonnes attendues: email, first_name, last_name, company, demo_link, custom1</div>
+      <div className="text-xs text-slate-500 mt-1">Colonnes attendues: email, first_name, last_name, company, demo_link, custom1. Optionnel: custom_subject, custom_body (email pré-personnalisé par lead, utilisé via {'{custom_subject}'} / {'{custom_body}'} dans le template).</div>
       {error && <div className="text-red-600 text-xs mt-2">{error}</div>}
     </label>
   )

@@ -52,7 +52,7 @@ export const leadsApi = {
     if (error) throw error
     return (data ?? []) as (Lead & { campaigns: { name: string } | null })[]
   },
-  bulkInsert: async (campaignId: string, leads: { email: string, first_name?: string, last_name?: string, company?: string, demo_link?: string, custom1?: string }[]) => {
+  bulkInsert: async (campaignId: string, leads: { email: string, first_name?: string, last_name?: string, company?: string, demo_link?: string, custom1?: string, custom_subject?: string, custom_body?: string }[]) => {
     const rows = leads.map(l => ({ ...l, campaign_id: campaignId, status: 'queued' as const, current_step: 0, next_send_at: new Date().toISOString() }))
     const { data, error } = await supabase.from('leads').upsert(rows, { onConflict: 'campaign_id,email', ignoreDuplicates: true }).select()
     if (error) throw error

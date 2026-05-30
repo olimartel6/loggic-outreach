@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -70,6 +50,8 @@ export type Database = {
           company: string | null
           created_at: string
           current_step: number
+          custom_body: string | null
+          custom_subject: string | null
           custom1: string | null
           demo_link: string | null
           email: string
@@ -88,6 +70,8 @@ export type Database = {
           company?: string | null
           created_at?: string
           current_step?: number
+          custom_body?: string | null
+          custom_subject?: string | null
           custom1?: string | null
           demo_link?: string | null
           email: string
@@ -106,6 +90,8 @@ export type Database = {
           company?: string | null
           created_at?: string
           current_step?: number
+          custom_body?: string | null
+          custom_subject?: string | null
           custom1?: string | null
           demo_link?: string | null
           email?: string
@@ -330,7 +316,12 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      contacted_domains: {
+        Row: {
+          domain: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       decrypt_secret_hex: { Args: { cipher_hex: string }; Returns: string }
@@ -482,11 +473,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const
-
