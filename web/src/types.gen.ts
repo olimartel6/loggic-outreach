@@ -145,6 +145,7 @@ export type Database = {
           imap_host: string
           imap_pass_encrypted: string
           imap_port: number
+          imap_user: string
           last_error: string | null
           last_imap_uid_seen: number
           smtp_host: string
@@ -163,6 +164,7 @@ export type Database = {
           imap_host: string
           imap_pass_encrypted: string
           imap_port?: number
+          imap_user: string
           last_error?: string | null
           last_imap_uid_seen?: number
           smtp_host: string
@@ -181,6 +183,7 @@ export type Database = {
           imap_host?: string
           imap_pass_encrypted?: string
           imap_port?: number
+          imap_user?: string
           last_error?: string | null
           last_imap_uid_seen?: number
           smtp_host?: string
@@ -330,7 +333,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrypt_secret_hex: { Args: { cipher_hex: string }; Returns: string }
+      jitter_next_for_mailbox: {
+        Args: { p_jitter_seconds: number; p_mailbox_id: string }
+        Returns: undefined
+      }
+      test_encrypt_helper: { Args: { plain: string }; Returns: string }
+      upsert_mailbox: {
+        Args: {
+          p_display_name: string
+          p_email: string
+          p_imap_host: string
+          p_imap_pass: string
+          p_imap_port: number
+          p_imap_user: string
+          p_smtp_host: string
+          p_smtp_pass: string
+          p_smtp_port: number
+          p_smtp_user: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

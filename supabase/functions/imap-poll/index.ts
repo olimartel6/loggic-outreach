@@ -11,7 +11,7 @@ Deno.serve(async () => {
     summary[mb.email] = { processed: 0, replies: 0, bounces: 0 }
     try {
       const pass = await decryptSecret(db, mb.imap_pass_encrypted as unknown as string)
-      const creds: ImapCreds = { host: mb.imap_host, port: mb.imap_port, username: mb.smtp_user, password: pass }
+      const creds: ImapCreds = { host: mb.imap_host, port: mb.imap_port, username: mb.imap_user, password: pass }
       const msgs = await fetchNewMessages(creds, Number(mb.last_imap_uid_seen))
       let maxUid = Number(mb.last_imap_uid_seen)
       for (const m of msgs) {

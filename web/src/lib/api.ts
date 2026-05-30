@@ -96,7 +96,7 @@ export const settingsApi = {
   upsertMailbox: async (input: {
     display_name: string, email: string,
     smtp_host: string, smtp_port: number, smtp_user: string, smtp_pass: string,
-    imap_host: string, imap_port: number, imap_pass: string,
+    imap_host: string, imap_port: number, imap_user: string, imap_pass: string,
   }) => {
     const { data, error } = await supabase.rpc('upsert_mailbox', {
       p_display_name: input.display_name,
@@ -107,6 +107,7 @@ export const settingsApi = {
       p_smtp_pass: input.smtp_pass,
       p_imap_host: input.imap_host,
       p_imap_port: input.imap_port,
+      p_imap_user: input.imap_user,
       p_imap_pass: input.imap_pass,
     })
     if (error) throw error
