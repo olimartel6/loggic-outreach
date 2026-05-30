@@ -1,7 +1,8 @@
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { campaignsApi, stepsApi } from '../lib/api'
+import { campaignsApi, stepsApi, leadsApi } from '../lib/api'
 import { SequenceStepCard } from '../components/SequenceStepCard'
+import { CsvUploader } from '../components/CsvUploader'
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>()
@@ -19,6 +20,11 @@ export default function CampaignDetail() {
   const toggleStatus = useMutation({
     mutationFn: (status: 'active' | 'paused' | 'draft') => campaignsApi.update(id!, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign', id] }),
+  })
+  const { data: leads } = useQuery({ queryKey: ['leads', id], queryFn: () => leadsApi.listByCampaign(id!), enabled: !!id })
+  const importLeads = useMutation({
+    mutationFn: (l: Parameters<typeof leadsApi.bulkInsert>[1]) => leadsApi.bulkInsert(id!, l),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads', id] }),
   })
 
   if (!camp) return <p>Chargement…</p>
@@ -58,6 +64,20 @@ export default function CampaignDetail() {
       >
         + Ajouter une étape
       </button>
+      <h2 className="text-lg font-semibold mt-8 mb-3">Leads ({leads?.length ?? 0})</h2>
+      <CsvUploader onParsed={l => importLeads.mutate(l)} />
+      {importLeads.isSuccess && <p className="text-green-600 text-xs mt-2">{importLeads.data?.length ?? 0} leads importés (doublons ignorés).</p>}
+      <div className="mt-4 bg-white border rounded-xl divide-y max-h-96 overflow-auto">
+        {leads?.map(l => (
+          <div key={l.id} className="flex justify-between p-3 text-sm">
+            <div>
+              <div className="font-medium">{l.email}</div>
+              <div className="text-xs text-slate-500">{l.company} • {l.first_name} {l.last_name}</div>
+            </div>
+            <div className="text-xs text-slate-500">{l.status} • step {l.current_step}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
