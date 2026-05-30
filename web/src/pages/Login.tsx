@@ -7,6 +7,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   async function send(e: React.FormEvent) {
     e.preventDefault()
+    // NOTE: window.location.origin must be added to Supabase Auth → URL Configuration → Redirect URLs (Studio in dev, dashboard in prod). Otherwise magic links 404.
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
     if (error) setError(error.message); else setSent(true)
   }
