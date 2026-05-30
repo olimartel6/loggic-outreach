@@ -1,5 +1,6 @@
 -- Whitelist: only specific emails can create accounts.
--- Edit allowed_emails to add users.
+-- To add a user, write a NEW migration that updates this function — do NOT edit
+-- this file after it's been applied (Supabase won't re-run it).
 create or replace function public.enforce_whitelist()
 returns trigger language plpgsql security definer as $$
 declare
