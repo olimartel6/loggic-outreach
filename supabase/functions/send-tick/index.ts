@@ -6,12 +6,12 @@ import { render, type Vars } from './templates.ts'
 // Footer désactivé à la demande d'Oli (déliverabilité couverte par les headers List-Unsubscribe et List-Unsubscribe-Post envoyés par smtp.ts — Gmail/Outlook s'en servent pour le bouton unsub natif sans avoir besoin de texte visible).
 const FOOTER = ''
 
+// MAX_RETRY_ATTEMPTS = 3 means up to 3 retries on top of 1 initial attempt = 4 total attempts.
+const MAX_RETRY_ATTEMPTS = 3
+
 Deno.serve(async () => {
   const db = adminClient()
   try {
-    // Heartbeat for /healthcheck — best-effort, never fail the handler on its account.
-    try { await db.rpc('heartbeat_send_tick') } catch { /* ignore */ }
-
     const startedAt = new Date()
 
     // 1. Fetch all active mailboxes
@@ -50,55 +50,62 @@ Deno.serve(async () => {
       const lead = (claimedRows as unknown as Record<string, unknown>[] | null)?.[0] as any
       if (!lead) { results[mb.email] = 0; continue }
 
-      // 5. Fetch the step to send
-      const { data: step } = await db.from('sequence_steps').select('*')
-        .eq('campaign_id', lead.campaign_id).eq('step_order', lead.current_step).single()
-      if (!step) {
-        await db.from('leads').update({ status: 'completed' }).eq('id', lead.id)
-        continue
-      }
+      // step_id is known only AFTER we successfully fetch the step inside processLead.
+      // We capture it in this closure-scoped variable so the outer catch can decide
+      // whether to insert a `sends` row (step_id is NOT NULL in the schema).
+      let currentStepId: string | null = null
 
-      // 6. Decrypt SMTP creds (separate try since failure must not nuke the handler)
-      let smtpPass: string
-      try {
-        smtpPass = await decryptSecret(db, mb.smtp_pass_encrypted as unknown as string)
-      } catch (e) {
-        const errMsg = String(e)
-        await db.from('mailboxes').update({ status: 'error', last_error: `decrypt failed: ${errMsg}` }).eq('id', mb.id)
-        await notifyTelegram(db, `Mailbox ${mb.email} mise en erreur (decrypt fail): ${errMsg.slice(0, 200)}`)
-        results[mb.email] = -1
-        continue
-      }
-      const creds: SmtpCreds = {
-        host: mb.smtp_host, port: mb.smtp_port,
-        username: mb.smtp_user, password: smtpPass,
-        fromEmail: mb.email, fromName: mb.display_name,
-      }
+      async function processLead(): Promise<{ status: 'sent' | 'advanced' }> {
+        // 5. Fetch the step to send
+        const { data: step, error: stepErr } = await db.from('sequence_steps').select('*')
+          .eq('campaign_id', lead.campaign_id).eq('step_order', lead.current_step).maybeSingle()
+        if (stepErr) throw new Error(`step fetch: ${stepErr.message}`)
+        if (!step) {
+          await db.from('leads').update({ status: 'completed', mailbox_id: null }).eq('id', lead.id)
+          return { status: 'advanced' }
+        }
+        currentStepId = step.id
 
-      const vars: Vars = {
-        first_name: lead.first_name ?? '',
-        last_name: lead.last_name ?? '',
-        company: lead.company ?? '',
-        demo_link: lead.demo_link ?? '',
-        custom1: lead.custom1 ?? '',
-        custom_subject: lead.custom_subject ?? '',
-        custom_body: lead.custom_body ?? '',
-      }
-      const subject = render(step.subject_template, vars)
-      const body = render(step.body_template, vars, { footer: FOOTER })
+        // 6. Decrypt SMTP creds — failure marks the mailbox in error and rethrows
+        // so the outer catch can apply the unified retry/backoff path.
+        let smtpPass: string
+        try {
+          smtpPass = await decryptSecret(db, mb.smtp_pass_encrypted as unknown as string)
+        } catch (e) {
+          const errMsg = String(e)
+          await db.from('mailboxes').update({ status: 'error', last_error: `decrypt failed: ${errMsg}` }).eq('id', mb.id)
+          await notifyTelegram(db, `Mailbox ${mb.email} mise en erreur (decrypt fail): ${errMsg.slice(0, 200)}`)
+          throw new Error(`decrypt failed for mailbox ${mb.email}: ${errMsg}`)
+        }
+        const creds: SmtpCreds = {
+          host: mb.smtp_host, port: mb.smtp_port,
+          username: mb.smtp_user, password: smtpPass,
+          fromEmail: mb.email, fromName: mb.display_name,
+        }
 
-      // 7. Threading: if this is a follow-up, reuse prior subject and reference Message-ID.
-      let finalSubject = subject
-      let inReplyTo: string | undefined
-      let references: string | undefined
-      if (lead.current_step > 0 && lead.thread_message_id) {
-        finalSubject = lead.last_subject?.startsWith('Re: ') ? lead.last_subject : `Re: ${lead.last_subject ?? subject}`
-        inReplyTo = lead.thread_message_id
-        references = lead.thread_message_id
-      }
+        const vars: Vars = {
+          first_name: lead.first_name ?? '',
+          last_name: lead.last_name ?? '',
+          company: lead.company ?? '',
+          demo_link: lead.demo_link ?? '',
+          custom1: lead.custom1 ?? '',
+          custom_subject: lead.custom_subject ?? '',
+          custom_body: lead.custom_body ?? '',
+        }
+        const subject = render(step.subject_template, vars)
+        const body = render(step.body_template, vars, { footer: FOOTER })
 
-      // 8. Send.
-      try {
+        // 7. Threading: if this is a follow-up, reuse prior subject and reference Message-ID.
+        let finalSubject = subject
+        let inReplyTo: string | undefined
+        let references: string | undefined
+        if (lead.current_step > 0 && lead.thread_message_id) {
+          finalSubject = lead.last_subject?.startsWith('Re: ') ? lead.last_subject : `Re: ${lead.last_subject ?? subject}`
+          inReplyTo = lead.thread_message_id
+          references = lead.thread_message_id
+        }
+
+        // 8. Send.
         const { messageId } = await sendEmail(creds, { to: lead.email, subject: finalSubject, body, inReplyTo, references })
         await db.from('sends').insert({ lead_id: lead.id, step_id: step.id, mailbox_id: mb.id, smtp_message_id: messageId, status: 'sent' })
 
@@ -122,39 +129,57 @@ Deno.serve(async () => {
           await db.rpc('jitter_next_for_mailbox', { p_mailbox_id: mb.id, p_jitter_seconds: 180 + Math.floor(Math.random() * 300) })
         } catch { /* ignore */ }
 
-        results[mb.email] = 1
+        return { status: 'sent' }
+      }
+
+      try {
+        const r = await processLead()
+        results[mb.email] = r.status === 'sent' ? 1 : 0
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : String(e)
-        // Check if a send already succeeded for this (lead, step) — if so, bookkeeping crashed post-send.
-        const { data: lastSend } = await db.from('sends').select('status').eq('lead_id', lead.id).eq('step_id', step.id).order('sent_at', { ascending: false }).limit(1).maybeSingle()
-        if (lastSend?.status === 'sent') {
-          results[mb.email] = 1
-          continue
+
+        // If a send already succeeded for this (lead, step) — bookkeeping crashed post-send.
+        if (currentStepId) {
+          const { data: lastSend } = await db.from('sends').select('status').eq('lead_id', lead.id).eq('step_id', currentStepId).order('sent_at', { ascending: false }).limit(1).maybeSingle()
+          if (lastSend?.status === 'sent') {
+            results[mb.email] = 1
+            continue
+          }
         }
 
         const currentRetry = ((lead as any).retry_count as number | undefined) ?? 0
-        const MAX_RETRIES = 3
-        if (currentRetry < MAX_RETRIES) {
+        if (currentRetry < MAX_RETRY_ATTEMPTS) {
           // Reschedule with exponential backoff: 5 min, 15 min, 60 min
           const delayMin = currentRetry === 0 ? 5 : currentRetry === 1 ? 15 : 60
           const nextRetryAt = new Date(Date.now() + delayMin * 60 * 1000).toISOString()
+          // CRITICAL: unclaim mailbox so another mailbox can pick up if this one is errored.
           await db.from('leads').update({
             status: 'queued',
             next_send_at: nextRetryAt,
             retry_count: currentRetry + 1,
             last_retry_at: new Date().toISOString(),
+            mailbox_id: null,
           }).eq('id', lead.id)
-          await db.from('sends').insert({ lead_id: lead.id, step_id: step.id, mailbox_id: mb.id, status: 'failed', error_text: `[retry ${currentRetry + 1}/${MAX_RETRIES}] ${errMsg}` })
+          // sends.step_id is NOT NULL — only log a sends row if we got past the step fetch.
+          if (currentStepId) {
+            await db.from('sends').insert({ lead_id: lead.id, step_id: currentStepId, mailbox_id: mb.id, status: 'failed', error_text: `[retry ${currentRetry + 1}/${MAX_RETRY_ATTEMPTS}] ${errMsg}` })
+          }
           results[mb.email] = -1
         } else {
           // Final failure
-          await db.from('sends').insert({ lead_id: lead.id, step_id: step.id, mailbox_id: mb.id, status: 'failed', error_text: `[final after ${MAX_RETRIES} retries] ${errMsg}` })
-          await db.from('leads').update({ status: 'failed' }).eq('id', lead.id)
-          await notifyTelegram(db, `Lead ${lead.email} marqué FAILED définitivement après ${MAX_RETRIES} retries.\nErreur: ${errMsg.slice(0, 200)}`)
+          if (currentStepId) {
+            await db.from('sends').insert({ lead_id: lead.id, step_id: currentStepId, mailbox_id: mb.id, status: 'failed', error_text: `[final after ${MAX_RETRY_ATTEMPTS} retries] ${errMsg}` })
+          }
+          await db.from('leads').update({ status: 'failed', mailbox_id: null }).eq('id', lead.id)
+          await notifyTelegram(db, `Lead ${lead.email} marqué FAILED après ${MAX_RETRY_ATTEMPTS} tentatives de retry (4 total).\nErreur: ${errMsg.slice(0, 200)}`)
           results[mb.email] = -1
         }
       }
     }
+
+    // Heartbeat at END — signals that send-tick reached the end without crashing.
+    // /healthcheck reads this to know the last successful tick. Best-effort, never fail on its account.
+    try { await db.rpc('heartbeat_send_tick') } catch { /* ignore */ }
 
     return new Response(JSON.stringify({ ok: true, results }), { headers: { 'content-type': 'application/json' } })
   } catch (e) {
