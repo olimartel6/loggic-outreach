@@ -9,6 +9,9 @@ const FOOTER = ''
 Deno.serve(async () => {
   const db = adminClient()
   try {
+    // Heartbeat for /healthcheck — best-effort, never fail the handler on its account.
+    try { await db.rpc('heartbeat_send_tick') } catch { /* ignore */ }
+
     const startedAt = new Date()
 
     // 1. Fetch all active mailboxes
