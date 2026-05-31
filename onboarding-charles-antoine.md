@@ -184,7 +184,49 @@ Générique, prétention chiffrée, lien démo, ton vendeur.
 
 ### 7. Soumettre directement à la DB (PAS de CSV)
 
-**⚠ CRITIQUE — Encoding UTF-8:** sur Windows, PowerShell / cmd / `curl -d '...'` interprètent les accents français comme cp1252 et corrompent les caractères (`é` devient `�` côté serveur). **N'inline JAMAIS le body en `-d '...'`.** Écris-le dans un fichier UTF-8 puis utilise `--data-binary @file.json`:
+**⚠⚠⚠ CRITIQUE — Encoding UTF-8:** sur Windows, PowerShell/cmd encodent en cp1252 et corrompent les accents français (`é` → `�` côté serveur). **Tu DOIS construire le payload via TON outil d'écriture de fichier (filesystem write), JAMAIS en passant les strings dans une commande shell.** Le flow obligatoire:
+
+**Étape A — Écris le payload entier dans un fichier UTF-8 via ton Write/Edit tool (PAS via shell):**
+
+Crée le fichier `C:\Users\caddu\OneDrive\Desktop\drafts.json` (ou path équivalent) avec le tool `Write` (ou `create_file`) en passant un STRING JSON valide UTF-8. Exemple de contenu (les accents doivent rester intacts dans ce que tu écris):
+
+```json
+{
+  "campaign_id": "UUID_DE_LA_CAMPAGNE_CIBLE",
+  "submitted_by": "Hermes (CA)",
+  "leads": [
+    {
+      "email": "sophie@urbaniabeaute.com",
+      "first_name": "Sophie",
+      "company": "Urbania Beauté",
+      "custom_subject": "Pour Sophie — petit truc pour Urbania",
+      "custom_body": "Salut Sophie, j'ai jeté un œil à...\n\nOlivier — Loggic"
+    }
+  ]
+}
+```
+
+**Étape B — Envoie le fichier avec `curl --data-binary @file`:**
+
+```bash
+TOKEN="SUBMISSION_TOKEN_HERE"
+curl -X POST 'https://tytfjnlclvmsjaofpnmq.supabase.co/functions/v1/submit-leads' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  --data-binary @/c/Users/caddu/OneDrive/Desktop/drafts.json
+```
+
+(Ou équivalent Windows-natif: `curl.exe -X POST ... --data-binary "@C:\Users\caddu\OneDrive\Desktop\drafts.json"`)
+
+**Étape C — VÉRIFIE avant de déclarer succès:** lis les drafts insérés via la clé anon:
+
+```bash
+ANON_KEY="..."
+curl -s "https://tytfjnlclvmsjaofpnmq.supabase.co/rest/v1/leads?campaign_id=eq.UUID&status=eq.draft&select=email,custom_subject,custom_body" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
+```
+
+Si TU VOIS LE CARACTÈRE `�` (U+FFFD) dans la réponse → l'encoding a foiré, **DELETE les drafts immédiatement** (via Edge Function admin OU dis à Oli/CA) puis recommence. NE PRÉSENTE PAS un succès tant que tu as pas confirmé que les accents sont intacts.
 
 ```bash
 TOKEN="SUBMISSION_TOKEN_HERE"  # Voir section 5bis pour le vrai token
