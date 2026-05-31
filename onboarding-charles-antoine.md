@@ -184,29 +184,43 @@ Générique, prétention chiffrée, lien démo, ton vendeur.
 
 ### 7. Soumettre directement à la DB (PAS de CSV)
 
-```bash
-TOKEN="SUBMISSION_TOKEN_HERE"  # Voir section 5bis de l'onboarding pour le vrai token
-CAMPAIGN_ID="UUID_DE_LA_CAMPAGNE_CIBLE"
+**⚠ CRITIQUE — Encoding UTF-8:** sur Windows, PowerShell / cmd / `curl -d '...'` interprètent les accents français comme cp1252 et corrompent les caractères (`é` devient `�` côté serveur). **N'inline JAMAIS le body en `-d '...'`.** Écris-le dans un fichier UTF-8 puis utilise `--data-binary @file.json`:
 
+```bash
+TOKEN="SUBMISSION_TOKEN_HERE"  # Voir section 5bis pour le vrai token
+CAMPAIGN_ID="UUID_DE_LA_CAMPAGNE_CIBLE"  # Récupéré à l'étape 2 via campaigns_public
+
+# Construis le body en Python (encoding UTF-8 garanti) ou en écrivant directement un fichier .json
+# Exemple avec Python (recommandé):
+python3 -c '
+import json, sys
+body = {
+  "campaign_id": "'"$CAMPAIGN_ID"'",
+  "submitted_by": "Hermes (CA)",
+  "leads": [
+    {
+      "email": "sophie@urbaniabeaute.com",
+      "first_name": "Sophie",
+      "company": "Urbania Beauté",
+      "custom_subject": "Pour Sophie — petit truc pour Urbania",
+      "custom_body": "Salut Sophie, jai jeté un oeil à...\n\nOlivier — Loggic"
+    }
+  ]
+}
+with open("/tmp/loggic_drafts.json", "w", encoding="utf-8") as f:
+  json.dump(body, f, ensure_ascii=False)
+'
+
+# Puis envoie avec --data-binary (préserve les bytes UTF-8 exacts)
 curl -X POST 'https://tytfjnlclvmsjaofpnmq.supabase.co/functions/v1/submit-leads' \
   -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "campaign_id": "'$CAMPAIGN_ID'",
-    "submitted_by": "Hermes (CA)",
-    "leads": [
-      {
-        "email": "sophie@urbaniabeaute.com",
-        "first_name": "Sophie",
-        "company": "Urbania Beauté",
-        "custom_subject": "Pour Sophie — petit truc pour Urbania",
-        "custom_body": "Salut Sophie, j'ai jeté un œil à...\n\nOlivier — Loggic"
-      }
-    ]
-  }'
+  -H "Content-Type: application/json; charset=utf-8" \
+  --data-binary @/tmp/loggic_drafts.json
 ```
 
-Réponse: `{"ok":true,"inserted":N,"skipped_duplicates":N}`.
+**Vérification après soumission:** lis les drafts via une requête GET et confirme qu'aucun champ ne contient le caractère U+FFFD (`�`). Si oui, c'est un bug d'encoding — DELETE les drafts cassés et recommence en utilisant le pattern Python ci-dessus.
+
+Réponse attendue: `{"ok":true,"inserted":N,"skipped_duplicates":N}`.
 
 Les leads atterrissent en `status='draft'` — visibles dans CampaignDetail sous "Brouillons", en attente que Oli/CA cliquent "Tout activer". DÈS qu'ils sont insérés, ils comptent dans `contacted_domains` — pas de risque de doublon entre sessions.
 
