@@ -21,6 +21,10 @@ export const campaignsApi = {
     const { error } = await supabase.from('campaigns').update(patch).eq('id', id)
     if (error) throw error
   },
+  delete: async (id: string) => {
+    const { error } = await supabase.rpc('delete_campaign', { p_campaign_id: id })
+    if (error) throw error
+  },
 }
 
 export const stepsApi = {

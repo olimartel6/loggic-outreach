@@ -13,6 +13,10 @@ export default function Campaigns() {
     mutationFn: () => campaignsApi.create(name, session!.user.id),
     onSuccess: () => { setName(''); qc.invalidateQueries({ queryKey: ['campaigns'] }) },
   })
+  const remove = useMutation({
+    mutationFn: (id: string) => campaignsApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaigns'] }),
+  })
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -27,14 +31,22 @@ export default function Campaigns() {
         <div className="bg-white rounded-xl border divide-y">
           {data?.length === 0 && <div className="p-6 text-slate-500">Aucune campagne. Crée la première ↑</div>}
           {data?.map(c => (
-            <Link key={c.id} to={`/campaigns/${c.id}`} className="flex items-center justify-between p-4 hover:bg-slate-50">
-              <div>
-                <div className="font-semibold">{c.name}</div>
-                <div className="text-xs text-slate-500">Status: {c.status} • Créée {new Date(c.created_at).toLocaleDateString('fr-CA')}</div>
-              </div>
-              <span className="text-slate-400">→</span>
-            </Link>
+            <div key={c.id} className="flex items-center justify-between p-4 hover:bg-slate-50">
+              <Link to={`/campaigns/${c.id}`} className="flex-1 flex items-center justify-between">
+                <div>
+                  <div className="font-semibold">{c.name}</div>
+                  <div className="text-xs text-slate-500">Status: {c.status} • Créée {new Date(c.created_at).toLocaleDateString('fr-CA')}</div>
+                </div>
+                <span className="text-slate-400 mr-3">→</span>
+              </Link>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (confirm(`Supprimer définitivement la campagne "${c.name}" et tous ses leads + sends + replies ? Irréversible.`)) remove.mutate(c.id) }}
+                disabled={remove.isPending}
+                className="text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded disabled:opacity-40"
+              >Supprimer</button>
+            </div>
           ))}
+          {remove.isError && <div className="p-3 text-red-600 text-xs">{(remove.error as Error).message}</div>}
         </div>
       )}
     </div>
