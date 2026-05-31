@@ -31,6 +31,10 @@ export async function sendEmail(creds: SmtpCreds, opts: SendOptions): Promise<Se
 
   const messageId = `<${crypto.randomUUID()}@${creds.fromEmail.split('@')[1]}>`
   const headers: Record<string, string> = { 'Message-ID': messageId }
+  const unsubMailto = `mailto:${creds.fromEmail.replace('@', '+unsub@')}?subject=unsubscribe`
+  headers['List-Unsubscribe'] = `<${unsubMailto}>`
+  headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
+  headers['Precedence'] = 'bulk'
   if (opts.inReplyTo) headers['In-Reply-To'] = opts.inReplyTo
   if (opts.references) headers['References'] = opts.references
 

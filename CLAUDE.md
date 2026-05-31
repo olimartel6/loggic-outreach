@@ -47,6 +47,26 @@ The lead state in prod is in flux during testing. Use the `q()` Python helper pa
 
 Production default: Mon-Fri 8h-17h America/Toronto, 20 emails/day per user. For dev/test, the schedule may be opened to 7/7 — check `campaigns.schedule` before assuming.
 
+## Deliverability ramp guidance
+
+Fresh outreach setups land in spam by default until the sender domain builds reputation with Gmail/Outlook. The 5-week ramp:
+
+| Week | Daily limit per user | Notes |
+|---|---|---|
+| 1 | 5 | Send to people who already know Oli first if possible; ask them to mark Not Spam and reply |
+| 2 | 10 | Watch inbox vs spam ratio in Gmail Postmaster Tools (postmaster.google.com) |
+| 3 | 20 | Tighten DMARC from p=none to p=quarantine if no SPF/DKIM failures in postmaster reports |
+| 4 | 35 | Continue monitoring |
+| 5+ | 50 max | Don't go above 50 without serious reputation built; cap is mostly per-mailbox not per-domain |
+
+If you (Claude) are asked to bump the limit early, push back: "the cron / mailbox limit isn't the bottleneck — Gmail spam classification is. Ramp slowly."
+
+## DNS records (manual, do NOT auto-change)
+
+- SPF: `v=spf1 include:spf.spacemail.com ~all` (on logiccsupplies.ca) — correct
+- DKIM: `spacemail._domainkey.logiccsupplies.ca` (Spacemail manages)
+- DMARC: `_dmarc.logiccsupplies.ca` — currently `p=none`. To tighten later: `v=DMARC1; p=quarantine; rua=mailto:olivier@logiccsupplies.ca`. Only do this AFTER 2 weeks of clean `p=none` reports (no SPF/DKIM failures from real sends).
+
 ## Don't touch
 
 - Production Supabase project (3 OTHER projects exist: `bulk-coach`, `roulette`, `SkillForge` — NOT this one. Only `loggic-outreach` is in scope here).

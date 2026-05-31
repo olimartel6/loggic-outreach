@@ -29,6 +29,21 @@ Fais lui faire ça une seule fois:
    - IMAP password: même mot de passe Spacemail
 4. Save. Ça appelle la RPC `upsert_mailbox` qui chiffre les mots de passe via pgcrypto et les stocke chiffrés dans la table `mailboxes`.
 
+## 2bis. Ramp progressif — IMPORTANT
+
+Quand CA configure sa mailbox dans Settings, la limite quotidienne par défaut est maintenant **5 emails/jour**. C'est volontaire — sa boîte `charles-antoine@logiccsupplies.ca` n'a pas encore d'historique d'envoi et part avec une réputation neutre.
+
+**Ramp suggéré:**
+- Semaine 1: 5/jour
+- Semaine 2: 10/jour
+- Semaine 3: 20/jour
+- Semaine 4: 35/jour
+- Semaine 5+: 50/jour max
+
+Si CA te demande de pousser à 50 dès la semaine 1, refuse poliment: "C'est pas la limite cron le bottleneck — c'est Gmail qui classe en spam. On rampe lentement sinon tout fini en pourriel et la réputation prend des mois à se réparer."
+
+Pour modifier: Settings → champ "Limite quotidienne" → enregistrer.
+
 ## 3. Comment marche le workflow de prospection (logique)
 
 Une campagne = un nom + un horaire + une liste d'étapes (séquence). Chaque étape = un délai en jours + un sujet template + un corps template. Les templates supportent les variables `{first_name}, {last_name}, {company}, {demo_link}, {custom1}, {custom_subject}, {custom_body}`.
