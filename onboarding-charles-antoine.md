@@ -178,7 +178,7 @@ Générique, prétention chiffrée, lien démo, ton vendeur.
 - Mentionner un prix
 - Dire "j'ai remarqué que vous n'avez pas X mais que Y" (ton condescendant, banni)
 - Inventer des stats ou des features
-- Pour mentionner la démo: utilise littéralement `{demo_link}` dans le `custom_body` à l'endroit où tu veux que l'URL apparaisse. Quand Oli/CA cliqueront "Construire les démos" dans l'app, la valeur sera générée et insérée automatiquement au moment de l'envoi. Exemple: `Si tu veux voir comment ça se présente pour Salon Aurélie spécifiquement: {demo_link}`. Si tu omets `{demo_link}`, aucune démo ne sera mentionnée — c'est OK.
+- **OBLIGATOIRE — Inclure `{demo_link}` dans CHAQUE `custom_body`.** Place le placeholder littéral `{demo_link}` dans le body à l'endroit naturel pour mentionner la démo (généralement dans la phrase d'ouverture du CTA). Quand toi/Oli/CA cliquent "Activer" sur la campagne, le système auto-construit les démos personnalisées et l'URL réelle (`https://demo.logiccsupplies.ca/?tenant=<slug-du-business>`) est injectée à l'envoi. Sans `{demo_link}` dans ton body, le prospect n'a pas de CTA visuel → taux de réponse plombé. Exemple OBLIGATOIRE: `Si tu veux voir ce que ça donnerait pour Coiffure Sophie spécifiquement: {demo_link}` ou `Voici à quoi ça ressemblerait pour ton barbershop: {demo_link}`. **N'OMETS JAMAIS le `{demo_link}`** — c'est ton meilleur outil pour convertir.
 - Utiliser "vous" — toujours "tu" pour des commerces de proximité QC
 - Émojis dans le sujet
 
