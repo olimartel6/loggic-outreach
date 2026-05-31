@@ -2,7 +2,8 @@ import { adminClient, decryptSecret } from '../_shared/db.ts'
 import { sendEmail, type SmtpCreds } from './smtp.ts'
 import { render, type Vars } from './templates.ts'
 
-const FOOTER = '\n\n—\nLoggic Outreach. Pour ne plus recevoir d\'emails: mailto:olivier+unsub@logiccsupplies.ca?subject=unsubscribe'
+// Footer désactivé à la demande d'Oli (déliverabilité couverte par les headers List-Unsubscribe et List-Unsubscribe-Post envoyés par smtp.ts — Gmail/Outlook s'en servent pour le bouton unsub natif sans avoir besoin de texte visible).
+const FOOTER = ''
 
 Deno.serve(async () => {
   const db = adminClient()

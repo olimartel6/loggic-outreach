@@ -106,7 +106,7 @@ export default function CampaignDetail() {
           <div className="text-xs text-slate-500">Status: {camp.status}</div>
         </div>
         <div className="flex gap-2 text-xs">
-          {camp.status !== 'active' && <button onClick={() => toggleStatus.mutate('active')} className="bg-green-600 text-white px-3 py-1.5 rounded">Activer</button>}
+          {camp.status !== 'active' && <button onClick={async () => { await toggleStatus.mutateAsync('active'); try { await buildDemos.mutateAsync() } catch (e) { console.warn('build-demos failed during activate (campagne activée quand même):', e) } }} className="bg-green-600 text-white px-3 py-1.5 rounded">Activer</button>}
           {camp.status === 'active' && <button onClick={() => toggleStatus.mutate('paused')} className="bg-yellow-600 text-white px-3 py-1.5 rounded">Mettre en pause</button>}
         </div>
       </div>
