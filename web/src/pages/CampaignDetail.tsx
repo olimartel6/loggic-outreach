@@ -68,6 +68,34 @@ export default function CampaignDetail() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['drafts', id] }),
   })
 
+  const buildDemos = useMutation({
+    mutationFn: async () => {
+      let token = localStorage.getItem('loggic_submission_token')
+      if (!token) {
+        token = prompt('Token de soumission (one-time, sera mémorisé dans le navigateur):')
+        if (!token) throw new Error('cancelled')
+        localStorage.setItem('loggic_submission_token', token)
+      }
+      const url = (import.meta.env.VITE_SUPABASE_URL as string) + '/functions/v1/build-demos'
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: id }),
+      })
+      if (resp.status === 401) {
+        localStorage.removeItem('loggic_submission_token')
+        throw new Error('token invalide, ré-essaie')
+      }
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${(await resp.text()).slice(0, 200)}`)
+      return resp.json() as Promise<{ built: number, reused_existing: number, total_considered: number }>
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['leads', id] })
+      qc.invalidateQueries({ queryKey: ['drafts', id] })
+      alert(`${r.built} démos créées, ${r.reused_existing} existaient déjà, ${r.total_considered} leads considérés.`)
+    },
+  })
+
   if (!camp) return <p>Chargement…</p>
   const nextOrder = steps && steps.length > 0 ? Math.max(...steps.map(s => s.step_order)) + 1 : 0
   return (
@@ -82,10 +110,10 @@ export default function CampaignDetail() {
           {camp.status === 'active' && <button onClick={() => toggleStatus.mutate('paused')} className="bg-yellow-600 text-white px-3 py-1.5 rounded">Mettre en pause</button>}
         </div>
       </div>
-      {(upsert.isError || remove.isError || toggleStatus.isError || importLeads.isError || approveDrafts.isError || rejectDraft.isError) && (
+      {(upsert.isError || remove.isError || toggleStatus.isError || importLeads.isError || approveDrafts.isError || rejectDraft.isError || buildDemos.isError) && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-2 rounded mb-4">
-          {(upsert.error || remove.error || toggleStatus.error || importLeads.error || approveDrafts.error || rejectDraft.error) instanceof Error
-            ? ((upsert.error || remove.error || toggleStatus.error || importLeads.error || approveDrafts.error || rejectDraft.error) as Error).message
+          {(upsert.error || remove.error || toggleStatus.error || importLeads.error || approveDrafts.error || rejectDraft.error || buildDemos.error) instanceof Error
+            ? ((upsert.error || remove.error || toggleStatus.error || importLeads.error || approveDrafts.error || rejectDraft.error || buildDemos.error) as Error).message
             : 'Erreur'}
         </div>
       )}
@@ -172,6 +200,16 @@ export default function CampaignDetail() {
             <div className="text-xs text-slate-500">{l.status} • step {l.current_step}</div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-6 flex gap-2">
+        <button
+          onClick={() => buildDemos.mutate()}
+          disabled={buildDemos.isPending}
+          className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded disabled:opacity-40"
+        >
+          {buildDemos.isPending ? 'Construction des démos…' : '🚀 Construire les démos pour les leads sans demo_link'}
+        </button>
       </div>
     </div>
   )

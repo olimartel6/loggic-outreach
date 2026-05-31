@@ -76,6 +76,18 @@ Response: `{ ok, inserted, skipped_duplicates }`
 
 Drafts that share `(campaign_id, email)` with an existing lead are silently skipped via `ignoreDuplicates`. The send-tick cron only picks up `status in ('queued', 'in_progress')`, so drafts are never sent until approved.
 
+## Auto-demo creation via /build-demos
+
+Once leads are queued (or still in draft), Oli/CA can click "Construire les démos" in CampaignDetail to auto-create personalized demos. The Edge function:
+- Reads loggic-outreach leads with `demo_link IS NULL` (optionally filtered by `campaign_id`)
+- Slugifies each `company` field (NFKD normalize, lowercase, ASCII, hyphens)
+- Checks if `slug` already exists in the loyalty SaaS project (`kptphghxhexirezukarr.loyalty_businesses`); if not, INSERTs a fresh row with default tiers/colors
+- Updates the lead's `demo_link` to `https://demo.logiccsupplies.ca/?tenant=<slug>`
+
+The function uses the **same submission_token** as /submit-leads. Authenticate with `Authorization: Bearer <token>`.
+
+Loyalty SaaS connection details live in `private.app_secrets` keys `loyalty_url` and `loyalty_service_role_key`. Rotate by updating those rows.
+
 ## DNS records (manual, do NOT auto-change)
 
 - SPF: `v=spf1 include:spf.spacemail.com ~all` (on logiccsupplies.ca) — correct

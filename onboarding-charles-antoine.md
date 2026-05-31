@@ -167,7 +167,7 @@ Générique, prétention chiffrée, lien démo, ton vendeur.
 - Mentionner un prix
 - Dire "j'ai remarqué que vous n'avez pas X mais que Y" (ton condescendant, banni)
 - Inventer des stats ou des features
-- Référencer un demo_link (laisse vide — Oli build les démos en batch après)
+- Pour mentionner la démo: utilise littéralement `{demo_link}` dans le `custom_body` à l'endroit où tu veux que l'URL apparaisse. Quand Oli/CA cliqueront "Construire les démos" dans l'app, la valeur sera générée et insérée automatiquement au moment de l'envoi. Exemple: `Si tu veux voir comment ça se présente pour Salon Aurélie spécifiquement: {demo_link}`. Si tu omets `{demo_link}`, aucune démo ne sera mentionnée — c'est OK.
 - Utiliser "vous" — toujours "tu" pour des commerces de proximité QC
 - Émojis dans le sujet
 
