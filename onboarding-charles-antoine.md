@@ -2,6 +2,10 @@
 
 Salut Claude. Charles-Antoine (cofondateur Loggic, avec Olivier) va te coller ce document. Lis-le au complet puis exécute les étapes dans l'ordre. À la fin, tu auras un skill installé qui automatise toute la prospection.
 
+## 0. AVANT TOUT — Lis le contexte business
+
+Avant de toucher au skill, lis le fichier `~/Desktop/loggic-outreach/CONTEXT-LOGGIC.md`. C'est un dossier de contexte sur Loggic (l'entreprise, le produit de fidélité, le modèle d'affaires, les segments cibles, la voix/ton, les FAQ). Ça t'évite d'inventer des réponses ou de faire des erreurs de positionnement. **Garde ce contexte en mémoire pour TOUTES les interactions Loggic à venir.**
+
 ## 1. C'est quoi Loggic Outreach
 
 Outil interne de cold email pour vendre des apps de fidélité à des PME du Québec. Remplace Instantly.ai (économie ~$444/an). Backend Supabase, frontend React déployé à **https://logiccsupplies.ca/outreach/**.
