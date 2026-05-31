@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Button } from '../components/Button'
+
+const inputCls =
+  'w-full rounded-md border-0 px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -12,20 +16,34 @@ export default function Login() {
     if (error) setError(error.message); else setSent(true)
   }
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <form onSubmit={send} className="bg-white p-8 rounded-xl shadow-sm w-96">
-        <h1 className="text-xl font-bold mb-1">Loggic Outreach</h1>
-        <p className="text-sm text-slate-500 mb-6">Connecte-toi avec ton email Loggic.</p>
-        {sent ? (
-          <p className="text-green-600 text-sm">Vérifie ta boîte mail pour le lien.</p>
-        ) : (
-          <>
-            <input value={email} onChange={e => setEmail(e.target.value)} type="email" required placeholder="toi@logiccsupplies.ca" className="w-full border rounded px-3 py-2 mb-3"/>
-            <button className="w-full bg-slate-900 text-white py-2 rounded">Envoyer le lien</button>
-            {error && <p className="text-red-600 text-xs mt-2">{error}</p>}
-          </>
-        )}
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-6">
+          <div className="text-lg font-semibold tracking-tight text-slate-900">Loggic Outreach</div>
+          <p className="text-sm text-slate-500 mt-1">Connecte-toi avec ton email Loggic.</p>
+        </div>
+        <form onSubmit={send} className="bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-6">
+          {sent ? (
+            <div className="text-center py-2">
+              <p className="text-sm text-slate-700">Vérifie ta boîte mail pour le lien de connexion.</p>
+            </div>
+          ) : (
+            <>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
+              <input
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                type="email"
+                required
+                placeholder="toi@logiccsupplies.ca"
+                className={inputCls}
+              />
+              <Button type="submit" className="w-full mt-4">Envoyer le lien</Button>
+              {error && <p className="text-red-600 text-xs mt-3">{error}</p>}
+            </>
+          )}
+        </form>
+      </div>
     </div>
   )
 }

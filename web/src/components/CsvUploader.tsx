@@ -17,7 +17,11 @@ export function CsvUploader({ onParsed, disabled }: { onParsed: (leads: LeadDraf
   const [parsing, setParsing] = useState(false)
   const busy = disabled || parsing
   return (
-    <label className={`block border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-slate-500 ${busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+    <label
+      className={`block border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-white transition ${
+        busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30'
+      }`}
+    >
       <input
         type="file"
         accept=".csv"
@@ -61,9 +65,14 @@ export function CsvUploader({ onParsed, disabled }: { onParsed: (leads: LeadDraf
           })
         }}
       />
-      <div className="text-sm font-semibold">{parsing ? 'Lecture du CSV…' : 'Glisse un CSV ici ou clique'}</div>
-      <div className="text-xs text-slate-500 mt-1">Colonnes attendues: email, first_name, last_name, company, demo_link, custom1. Optionnel: custom_subject, custom_body (email pré-personnalisé par lead, utilisé via {'{custom_subject}'} / {'{custom_body}'} dans le template).</div>
-      {error && <div className="text-red-600 text-xs mt-2">{error}</div>}
+      <div className="text-sm font-medium text-slate-900">
+        {parsing ? 'Lecture du CSV…' : 'Glisse un CSV ici ou clique pour importer'}
+      </div>
+      <div className="text-xs text-slate-500 mt-2 max-w-xl mx-auto leading-relaxed">
+        Colonnes attendues: email, first_name, last_name, company, demo_link, custom1.
+        Optionnel: custom_subject, custom_body (email pré-personnalisé par lead, utilisé via {'{custom_subject}'} / {'{custom_body}'} dans le template).
+      </div>
+      {error && <div className="text-red-600 text-xs mt-3">{error}</div>}
     </label>
   )
 }

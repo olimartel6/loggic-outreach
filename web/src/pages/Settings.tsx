@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { mailboxesApi, settingsApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { Button } from '../components/Button'
 import type { Mailbox } from '../types'
 
 type FormState = {
@@ -18,6 +19,11 @@ type FormState = {
   imap_pass: string
   daily_limit: number
 }
+
+const inputCls =
+  'w-full rounded-md border-0 px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500'
+
+const labelCls = 'block text-xs font-medium text-slate-700 mb-1.5'
 
 function emptyForm(defaultEmail = ''): FormState {
   return {
@@ -101,35 +107,45 @@ export default function Settings() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
-      <section className="bg-white border rounded-xl p-6 mb-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
+        <p className="text-sm text-slate-500 mt-1">Mailboxes d'envoi et configuration.</p>
+      </div>
+
+      <section className="bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold">Mailboxes d'envoi</h2>
-          <button
-            onClick={startAdd}
-            className="text-sm bg-slate-900 text-white px-3 py-1.5 rounded"
-          >+ Ajouter une mailbox</button>
+          <div>
+            <h2 className="font-semibold text-slate-900">Mailboxes d'envoi</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Configure plusieurs mailboxes — le cron alterne automatiquement. Chacune respecte sa propre limite quotidienne.
+            </p>
+          </div>
+          <Button onClick={startAdd}>Ajouter une mailbox</Button>
         </div>
-        <p className="text-xs text-slate-500 mb-4">
-          Tu peux configurer plusieurs mailboxes — le cron alterne automatiquement entre elles à chaque tick. Chacune respecte sa propre limite quotidienne.
-        </p>
 
         {(!mailboxes || mailboxes.length === 0) && (
-          <p className="text-sm text-slate-500">Aucune mailbox configurée. Clique "Ajouter une mailbox".</p>
+          <p className="text-sm text-slate-500 mt-2">Aucune mailbox configurée. Clique "Ajouter une mailbox".</p>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-2 mt-2">
           {mailboxes?.map(mb => {
             const dailyLimit = (mb as unknown as { daily_limit?: number }).daily_limit ?? 20
             return (
-              <div key={mb.id} className="border rounded-lg px-3 py-2 flex items-center justify-between text-sm">
-                <div>
-                  <div className="font-medium">{mb.display_name} <span className="text-slate-500 font-normal">&lt;{mb.email}&gt;</span></div>
-                  <div className="text-xs text-slate-500">Limite: {dailyLimit}/jour · SMTP {mb.smtp_host}:{mb.smtp_port} · IMAP {mb.imap_host}:{mb.imap_port}</div>
+              <div
+                key={mb.id}
+                className="rounded-lg px-4 py-3 flex items-center justify-between text-sm bg-slate-50/60 ring-1 ring-slate-200/60"
+              >
+                <div className="min-w-0">
+                  <div className="font-medium text-slate-900 truncate">
+                    {mb.display_name} <span className="text-slate-500 font-normal">&lt;{mb.email}&gt;</span>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-0.5 truncate">
+                    Limite: {dailyLimit}/jour · SMTP {mb.smtp_host}:{mb.smtp_port} · IMAP {mb.imap_host}:{mb.imap_port}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => startEdit(mb)} className="text-xs bg-slate-100 px-3 py-1.5 rounded">Modifier</button>
-                  <button onClick={() => confirmDelete(mb)} disabled={remove.isPending} className="text-xs text-red-700 bg-red-50 px-3 py-1.5 rounded disabled:opacity-40">Supprimer</button>
+                <div className="flex gap-2 ml-3">
+                  <Button variant="secondary" size="sm" onClick={() => startEdit(mb)}>Modifier</Button>
+                  <Button variant="danger" size="sm" onClick={() => confirmDelete(mb)} disabled={remove.isPending}>Supprimer</Button>
                 </div>
               </div>
             )
@@ -138,37 +154,77 @@ export default function Settings() {
       </section>
 
       {editing && (
-        <section className="bg-white border rounded-xl p-6 mb-6">
-          <h2 className="font-semibold mb-3">{editing.id ? 'Modifier mailbox' : 'Nouvelle mailbox'}</h2>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <label>Nom affiché<input className="border w-full rounded px-2 py-1.5 mt-1" value={editing.display_name} onChange={e => setEditing({...editing, display_name: e.target.value})} placeholder="Olivier Martel"/></label>
-            <label>Email<input className="border w-full rounded px-2 py-1.5 mt-1" value={editing.email} onChange={e => setEditing({...editing, email: e.target.value})} type="email"/></label>
-            <label className="col-span-2">
-              Limite quotidienne d'emails
-              <input className="border w-full rounded px-2 py-1.5 mt-1" type="number" min={1} max={500} value={editing.daily_limit} onChange={e => setEditing({...editing, daily_limit: Number(e.target.value)})}/>
-              <p className="text-xs text-slate-500 mt-1">Recommandé: démarrer à 5/jour, ramp progressif sur 2 semaines, max 50/jour pour une bonne deliverability.</p>
-            </label>
-            <label>SMTP host<input className="border w-full rounded px-2 py-1.5 mt-1" value={editing.smtp_host} onChange={e => setEditing({...editing, smtp_host: e.target.value})}/></label>
-            <label>SMTP port<input className="border w-full rounded px-2 py-1.5 mt-1" type="number" value={editing.smtp_port} onChange={e => setEditing({...editing, smtp_port: Number(e.target.value)})}/></label>
-            <label>SMTP user<input className="border w-full rounded px-2 py-1.5 mt-1" value={editing.smtp_user} onChange={e => setEditing({...editing, smtp_user: e.target.value})}/></label>
-            <label>SMTP password
-              <input className="border w-full rounded px-2 py-1.5 mt-1" type="password" value={editing.smtp_pass} onChange={e => setEditing({...editing, smtp_pass: e.target.value})} placeholder={editing.id ? 'Laisse vide pour garder l\'existant' : ''}/>
-            </label>
-            <label>IMAP host<input className="border w-full rounded px-2 py-1.5 mt-1" value={editing.imap_host} onChange={e => setEditing({...editing, imap_host: e.target.value})}/></label>
-            <label>IMAP port<input className="border w-full rounded px-2 py-1.5 mt-1" type="number" value={editing.imap_port} onChange={e => setEditing({...editing, imap_port: Number(e.target.value)})}/></label>
-            <label>IMAP user<input className="border w-full rounded px-2 py-1.5 mt-1" value={editing.imap_user} onChange={e => setEditing({...editing, imap_user: e.target.value})}/></label>
-            <label>IMAP password
-              <input className="border w-full rounded px-2 py-1.5 mt-1" type="password" value={editing.imap_pass} onChange={e => setEditing({...editing, imap_pass: e.target.value})} placeholder={editing.id ? 'Laisse vide pour garder l\'existant' : ''}/>
-            </label>
+        <section className="bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-6 mb-6">
+          <h2 className="font-semibold text-slate-900 mb-4">
+            {editing.id ? 'Modifier mailbox' : 'Nouvelle mailbox'}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Nom affiché</label>
+              <input className={inputCls} value={editing.display_name} onChange={e => setEditing({ ...editing, display_name: e.target.value })} placeholder="Olivier Martel" />
+            </div>
+            <div>
+              <label className={labelCls}>Email</label>
+              <input className={inputCls} value={editing.email} onChange={e => setEditing({ ...editing, email: e.target.value })} type="email" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Limite quotidienne d'emails</label>
+              <input className={inputCls} type="number" min={1} max={500} value={editing.daily_limit} onChange={e => setEditing({ ...editing, daily_limit: Number(e.target.value) })} />
+              <p className="text-xs text-slate-500 mt-1.5">Recommandé: démarrer à 5/jour, ramp progressif sur 2 semaines, max 50/jour pour une bonne deliverability.</p>
+            </div>
+            <div>
+              <label className={labelCls}>SMTP host</label>
+              <input className={inputCls} value={editing.smtp_host} onChange={e => setEditing({ ...editing, smtp_host: e.target.value })} />
+            </div>
+            <div>
+              <label className={labelCls}>SMTP port</label>
+              <input className={inputCls} type="number" value={editing.smtp_port} onChange={e => setEditing({ ...editing, smtp_port: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className={labelCls}>SMTP user</label>
+              <input className={inputCls} value={editing.smtp_user} onChange={e => setEditing({ ...editing, smtp_user: e.target.value })} />
+            </div>
+            <div>
+              <label className={labelCls}>SMTP password</label>
+              <input
+                className={inputCls}
+                type="password"
+                value={editing.smtp_pass}
+                onChange={e => setEditing({ ...editing, smtp_pass: e.target.value })}
+                placeholder={editing.id ? 'Laisse vide pour garder l\'existant' : ''}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>IMAP host</label>
+              <input className={inputCls} value={editing.imap_host} onChange={e => setEditing({ ...editing, imap_host: e.target.value })} />
+            </div>
+            <div>
+              <label className={labelCls}>IMAP port</label>
+              <input className={inputCls} type="number" value={editing.imap_port} onChange={e => setEditing({ ...editing, imap_port: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className={labelCls}>IMAP user</label>
+              <input className={inputCls} value={editing.imap_user} onChange={e => setEditing({ ...editing, imap_user: e.target.value })} />
+            </div>
+            <div>
+              <label className={labelCls}>IMAP password</label>
+              <input
+                className={inputCls}
+                type="password"
+                value={editing.imap_pass}
+                onChange={e => setEditing({ ...editing, imap_pass: e.target.value })}
+                placeholder={editing.id ? 'Laisse vide pour garder l\'existant' : ''}
+              />
+            </div>
           </div>
-          <div className="mt-4 flex gap-2">
-            <button onClick={() => save.mutate(editing)} disabled={save.isPending} className="bg-slate-900 text-white text-sm px-4 py-2 rounded">
+          <div className="mt-5 flex gap-2">
+            <Button onClick={() => save.mutate(editing)} disabled={save.isPending}>
               {save.isPending ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
-            <button onClick={() => setEditing(null)} className="bg-slate-100 text-sm px-4 py-2 rounded">Annuler</button>
+            </Button>
+            <Button variant="secondary" onClick={() => setEditing(null)}>Annuler</Button>
           </div>
-          {save.isError && <p className="text-red-600 text-xs mt-2">{String(save.error)}</p>}
-          {remove.isError && <p className="text-red-600 text-xs mt-2">{String(remove.error)}</p>}
+          {save.isError && <p className="text-red-600 text-xs mt-3">{String(save.error)}</p>}
+          {remove.isError && <p className="text-red-600 text-xs mt-3">{String(remove.error)}</p>}
         </section>
       )}
     </div>

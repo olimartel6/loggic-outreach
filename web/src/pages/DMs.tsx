@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Button } from '../components/Button'
+import { StatusBadge } from '../components/StatusBadge'
 
 type DmDraft = {
   id: string
@@ -16,11 +18,27 @@ type DmDraft = {
 }
 
 const channelLabel: Record<DmDraft['channel'], string> = {
-  instagram: 'IG',
+  instagram: 'Instagram',
   messenger: 'Messenger',
   linkedin: 'LinkedIn',
   other: 'Autre',
 }
+
+function channelBadge(channel: DmDraft['channel']) {
+  switch (channel) {
+    case 'instagram': return <StatusBadge variant="danger">{channelLabel[channel]}</StatusBadge>
+    case 'messenger': return <StatusBadge variant="info">{channelLabel[channel]}</StatusBadge>
+    case 'linkedin': return <StatusBadge variant="info">{channelLabel[channel]}</StatusBadge>
+    default: return <StatusBadge variant="neutral">{channelLabel[channel]}</StatusBadge>
+  }
+}
+
+const filterTabs: { key: DmDraft['status'] | 'all', label: string }[] = [
+  { key: 'pending', label: 'En attente' },
+  { key: 'sent', label: 'Envoyés' },
+  { key: 'skipped', label: 'Skippés' },
+  { key: 'all', label: 'Tous' },
+]
 
 export default function DMs() {
   const qc = useQueryClient()
@@ -54,48 +72,83 @@ export default function DMs() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">DM Drafts</h1>
-      <p className="text-sm text-slate-500 mb-4">
-        Drafts générés par l'IA. Workflow: copie le texte → colle dans IG/Messenger/LinkedIn manuellement → clique "Marqué envoyé" pour ajouter à la dedup list.
-      </p>
-      <div className="flex gap-2 mb-4 text-xs">
-        {(['pending', 'sent', 'skipped', 'all'] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded ${filter === f ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}
-          >{f === 'pending' ? 'En attente' : f === 'sent' ? 'Envoyés' : f === 'skipped' ? 'Skippés' : 'Tous'}</button>
-        ))}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">DM Drafts</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Drafts générés par l'IA. Copie le texte, colle dans Instagram, Messenger ou LinkedIn, puis marque envoyé pour l'ajouter à la dedup.
+        </p>
       </div>
 
-      {(!drafts || drafts.length === 0) && <p className="text-slate-500 text-sm">Aucun draft dans cette catégorie.</p>}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {filterTabs.map(f => {
+          const active = filter === f.key
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                active
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 ring-1 ring-inset ring-slate-200'
+              }`}
+            >
+              {f.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {(!drafts || drafts.length === 0) && (
+        <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-8 text-center text-sm text-slate-500">
+          Aucun draft dans cette catégorie.
+        </div>
+      )}
 
       <div className="space-y-3">
         {drafts?.map(d => (
-          <div key={d.id} className="bg-white border rounded-xl p-4">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="font-semibold">{channelLabel[d.channel]} — {d.business_name}</div>
-                <div className="text-xs text-slate-500 mt-0.5">
-                  {d.business_handle ?? ''} {d.business_handle && d.business_email ? '•' : ''} {d.business_email ?? ''}
-                  {d.submitted_by && <span className="ml-2">• via {d.submitted_by}</span>}
+          <div key={d.id} className="bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-5">
+            <div className="flex justify-between items-start gap-3 mb-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {channelBadge(d.channel)}
+                  <div className="font-semibold text-slate-900 truncate">{d.business_name}</div>
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {d.business_handle ?? ''}
+                  {d.business_handle && d.business_email ? ' • ' : ''}
+                  {d.business_email ?? ''}
+                  {d.submitted_by && <span className="ml-1">• via {d.submitted_by}</span>}
                 </div>
               </div>
-              <div className="text-xs text-slate-400">{new Date(d.created_at).toLocaleString('fr-CA')}</div>
+              <div className="text-xs text-slate-400 whitespace-nowrap">
+                {new Date(d.created_at).toLocaleString('fr-CA')}
+              </div>
             </div>
-            <pre className="whitespace-pre-wrap text-sm font-mono bg-slate-50 p-3 rounded border border-slate-100">{d.draft_text}</pre>
-            <div className="mt-3 flex gap-2 flex-wrap">
-              <button onClick={() => copyToClipboard(d.draft_text)} className="text-xs bg-slate-100 px-3 py-1.5 rounded">Copier</button>
-              {d.business_url && <a href={d.business_url} target="_blank" rel="noreferrer" className="text-xs bg-slate-100 px-3 py-1.5 rounded">Ouvrir profil</a>}
+            <pre className="whitespace-pre-wrap text-sm font-mono bg-slate-50 p-3 rounded-md ring-1 ring-slate-200/60 text-slate-800">{d.draft_text}</pre>
+            <div className="mt-3 flex gap-2 flex-wrap items-center">
+              <Button size="sm" variant="secondary" onClick={() => copyToClipboard(d.draft_text)}>Copier</Button>
+              {d.business_url && (
+                <a
+                  href={d.business_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center font-medium rounded-md transition bg-white text-slate-900 hover:bg-slate-50 ring-1 ring-inset ring-slate-300 shadow-sm px-2.5 py-1.5 text-xs"
+                >
+                  Ouvrir profil
+                </a>
+              )}
               {d.status === 'pending' && (
                 <>
-                  <button onClick={() => setStatus.mutate({ id: d.id, status: 'sent' })} disabled={setStatus.isPending} className="text-xs bg-green-600 text-white px-3 py-1.5 rounded disabled:opacity-40">Marqué envoyé</button>
-                  <button onClick={() => setStatus.mutate({ id: d.id, status: 'skipped' })} disabled={setStatus.isPending} className="text-xs bg-slate-200 px-3 py-1.5 rounded">Skip</button>
+                  <Button size="sm" onClick={() => setStatus.mutate({ id: d.id, status: 'sent' })} disabled={setStatus.isPending}>
+                    Marqué envoyé
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setStatus.mutate({ id: d.id, status: 'skipped' })} disabled={setStatus.isPending}>
+                    Skip
+                  </Button>
                 </>
               )}
-              {d.status !== 'pending' && (
-                <span className={`text-xs px-3 py-1.5 rounded ${d.status === 'sent' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{d.status === 'sent' ? 'Envoyé' : 'Skippé'}</span>
-              )}
+              {d.status === 'sent' && <StatusBadge variant="success">Envoyé</StatusBadge>}
+              {d.status === 'skipped' && <StatusBadge variant="neutral">Skippé</StatusBadge>}
             </div>
           </div>
         ))}

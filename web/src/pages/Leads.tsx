@@ -20,11 +20,27 @@ export default function Leads() {
   })
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Leads</h1>
-      <div className="flex gap-2 mb-4">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setFilter(t.key)} className={`text-xs px-3 py-1.5 rounded ${filter === t.key ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}>{t.label}</button>
-        ))}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Leads</h1>
+        <p className="text-sm text-slate-500 mt-1">Vue globale de tous les leads à travers les campagnes.</p>
+      </div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {tabs.map(t => {
+          const active = filter === t.key
+          return (
+            <button
+              key={t.key}
+              onClick={() => setFilter(t.key)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                active
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 ring-1 ring-inset ring-slate-200'
+              }`}
+            >
+              {t.label}
+            </button>
+          )
+        })}
       </div>
       <LeadsTable leads={data ?? []} />
     </div>
