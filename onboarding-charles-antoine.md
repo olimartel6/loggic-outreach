@@ -102,11 +102,22 @@ Identifie:
 - **Ville/région** (Québec, Lévis, St-Augustin, Beauport — JAMAIS Trois-Rivières/Sherbrooke/Gatineau/Saguenay)
 - **Nombre cible** (défaut 10)
 - **Niches à skip** (bijouteries, vélo, fine-dining; cafés et fitness saturés par DataCandy/FLiiP)
-- **Campaign ID cible** — si l'utilisateur n'a pas spécifié, demande-lui (il y a une page Campagnes dans l'app, il peut copier l'ID depuis l'URL)
+- **Campaign cible** — si l'utilisateur dit "campagne X" (par nom), fetch la liste et trouve l'UUID toi-même (voir étape 2). S'il a pas spécifié, demande-lui le nom de la campagne ou propose-lui les noms que tu vois.
 
 Si le brief est vague, propose 2-3 segments + villes en tableau et demande confirmation.
 
-### 2. Fetch la dedup list
+### 2. Auto-découvrir l'UUID de la campagne par son nom
+
+```bash
+ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5dGZqbmxjbHZtc2phb2Zwbm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjY5NDQsImV4cCI6MjA5NTc0Mjk0NH0.AESgQ5sxjzYyQHIZj6tNp5vCJd0Mfkve_KKVFF2t8Ok"
+
+curl -s 'https://tytfjnlclvmsjaofpnmq.supabase.co/rest/v1/campaigns_public?select=id,name,status' \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
+```
+
+Retourne une liste comme `[{"id":"f3afdd9a-...","name":"charlo email","status":"draft"}, ...]`. Match le nom que l'utilisateur a dit (case-insensitive, ignore les tirets/espaces si nécessaire). Si plusieurs matchent ou aucun, demande à l'utilisateur de préciser. Pour ignorer les vieilles campagnes, filter `status != 'archived'`.
+
+### 3. Fetch la dedup list
 
 ```bash
 curl -s 'https://tytfjnlclvmsjaofpnmq.supabase.co/rest/v1/contacted_domains?select=domain' \
@@ -114,15 +125,15 @@ curl -s 'https://tytfjnlclvmsjaofpnmq.supabase.co/rest/v1/contacted_domains?sele
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5dGZqbmxjbHZtc2phb2Zwbm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjY5NDQsImV4cCI6MjA5NTc0Mjk0NH0.AESgQ5sxjzYyQHIZj6tNp5vCJd0Mfkve_KKVFF2t8Ok'
 ```
 
-### 3. Trouver les prospects
+### 4. Trouver les prospects
 
 Utilise Firecrawl ou WebSearch. Pour chaque candidat: email RÉEL (jamais inventé), prénom du propriétaire, site web, slug. Si pas de vrai email → SKIP ce prospect (ne le mets pas en `EMAIL_TBD`, il sert à rien tant qu'on a pas l'email).
 
-### 4. Dedup par domaine
+### 5. Dedup par domaine
 
 Pour chaque prospect: si `email.split('@')[1].toLowerCase()` est dans la dedup list → SKIP avec log "skipped: [nom] — déjà contacté".
 
-### 5. Personnaliser le `custom_subject` + `custom_body` — RÈGLES STRICTES
+### 6. Personnaliser le `custom_subject` + `custom_body` — RÈGLES STRICTES
 
 **Format du custom_subject:**
 - 4 à 8 mots
@@ -171,7 +182,7 @@ Générique, prétention chiffrée, lien démo, ton vendeur.
 - Utiliser "vous" — toujours "tu" pour des commerces de proximité QC
 - Émojis dans le sujet
 
-### 6. Soumettre directement à la DB (PAS de CSV)
+### 7. Soumettre directement à la DB (PAS de CSV)
 
 ```bash
 TOKEN="SUBMISSION_TOKEN_HERE"  # Voir section 5bis de l'onboarding pour le vrai token
@@ -199,7 +210,7 @@ Réponse: `{"ok":true,"inserted":N,"skipped_duplicates":N}`.
 
 Les leads atterrissent en `status='draft'` — visibles dans CampaignDetail sous "Brouillons", en attente que Oli/CA cliquent "Tout activer". DÈS qu'ils sont insérés, ils comptent dans `contacted_domains` — pas de risque de doublon entre sessions.
 
-### 7. Rapport final à l'utilisateur
+### 8. Rapport final à l'utilisateur
 
 - Combien trouvés / skipped dedup / soumis en draft
 - Lien direct vers la campagne: `https://logiccsupplies.ca/outreach/#/campaigns/<CAMPAIGN_ID>`
