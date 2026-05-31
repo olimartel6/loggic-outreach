@@ -44,6 +44,48 @@ export type Database = {
         }
         Relationships: []
       }
+      dm_drafts: {
+        Row: {
+          business_email: string | null
+          business_handle: string | null
+          business_name: string
+          business_url: string | null
+          channel: string
+          created_at: string
+          draft_text: string
+          id: string
+          sent_at: string | null
+          status: string
+          submitted_by: string | null
+        }
+        Insert: {
+          business_email?: string | null
+          business_handle?: string | null
+          business_name: string
+          business_url?: string | null
+          channel: string
+          created_at?: string
+          draft_text: string
+          id?: string
+          sent_at?: string | null
+          status?: string
+          submitted_by?: string | null
+        }
+        Update: {
+          business_email?: string | null
+          business_handle?: string | null
+          business_name?: string
+          business_url?: string | null
+          channel?: string
+          created_at?: string
+          draft_text?: string
+          id?: string
+          sent_at?: string | null
+          status?: string
+          submitted_by?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           campaign_id: string
@@ -319,6 +361,21 @@ export type Database = {
       }
     }
     Views: {
+      app_secrets: {
+        Row: {
+          key: string | null
+          value: string | null
+        }
+        Insert: {
+          key?: string | null
+          value?: string | null
+        }
+        Update: {
+          key?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       contacted_domains: {
         Row: {
           domain: string | null
@@ -327,7 +384,9 @@ export type Database = {
       }
     }
     Functions: {
+      check_submission_token: { Args: { p_token: string }; Returns: boolean }
       decrypt_secret_hex: { Args: { cipher_hex: string }; Returns: string }
+      delete_mailbox: { Args: { p_mailbox_id: string }; Returns: undefined }
       jitter_next_for_mailbox: {
         Args: { p_jitter_seconds: number; p_mailbox_id: string }
         Returns: undefined
@@ -342,6 +401,7 @@ export type Database = {
           p_imap_pass: string
           p_imap_port: number
           p_imap_user: string
+          p_mailbox_id?: string
           p_smtp_host: string
           p_smtp_pass: string
           p_smtp_port: number

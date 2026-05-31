@@ -88,6 +88,17 @@ The function uses the **same submission_token** as /submit-leads. Authenticate w
 
 Loyalty SaaS connection details live in `private.app_secrets` keys `loyalty_url` and `loyalty_service_role_key`. Rotate by updating those rows.
 
+## DM Drafts via /submit-dm-drafts
+
+Hermes can submit DM drafts (Instagram / Messenger / LinkedIn) in parallel with email leads. Endpoint:
+- `POST /functions/v1/submit-dm-drafts` with same submission_token auth
+- Body: `{drafts: [{business_name, channel, draft_text, business_handle?, business_email?, business_url?, ...}], submitted_by?}`
+- Drafts land in `dm_drafts` table with status='pending'
+
+UI: "DMs" tab in app lists pending drafts with Copy button + "Marqué envoyé"/"Skip" actions. Marking sent updates `status` and contributes to `contacted_domains` (the view UNIONs sent DM drafts' business_email and business_url domain).
+
+Mailbox rotation: multiple mailboxes per user now supported. Send-tick iterates ALL active mailboxes per tick, each respects its own `daily_limit`. Add new mailboxes from Settings.
+
 ## DNS records (manual, do NOT auto-change)
 
 - SPF: `v=spf1 include:spf.spacemail.com ~all` (on logiccsupplies.ca) — correct

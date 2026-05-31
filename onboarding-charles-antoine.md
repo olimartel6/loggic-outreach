@@ -221,7 +221,46 @@ Le skill ci-dessus utilise un `SUBMISSION_TOKEN` pour pousser des drafts dans la
 
 Oli te passera la vraie valeur via Telegram ou un autre canal sécurisé. Si tu ne l'as pas, demande-la avant de continuer — ne génère pas de prospects sans, sinon l'API refuse les appels (401).
 
-## 6. Vérifier l'installation
+## 6. Workflow DM en parallèle (canal complémentaire)
+
+Pour chaque prospect que tu génères, tu produis aussi 1 DM Instagram (ou Messenger si le business n'a pas d'IG actif) en plus de l'email. Le DM va dans l'onglet "DMs" de l'app, Oli ou CA le copie-colle manuellement dans IG. Marqué envoyé → compte dans la dedup.
+
+### Endpoint
+
+```
+POST https://tytfjnlclvmsjaofpnmq.supabase.co/functions/v1/submit-dm-drafts
+Authorization: Bearer SUBMISSION_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "submitted_by": "Hermes (CA)",
+  "drafts": [
+    {
+      "business_name": "Coiffure Sophie & Co",
+      "business_handle": "@coiffuresophieco",
+      "business_url": "https://www.instagram.com/coiffuresophieco",
+      "channel": "instagram",
+      "draft_text": "Salut Sophie, super le balayage que t'as posté dimanche..."
+    }
+  ]
+}
+```
+
+### Règles pour le `draft_text`
+
+Même règles que pour `custom_body` (3-5 phrases, spécifique, "tu", pas de prix, pas de lien) MAIS:
+- Plus court (max ~400 caractères — IG/Messenger préfèrent court)
+- Pas de signature formelle ("Olivier — Loggic"), un simple "Olivier" suffit
+- Si tu veux mentionner la démo, NE PAS mettre `{demo_link}` (l'auto-build ne fait pas les DMs). Si tu mentionnes une démo, mets `{demo_link}` literal qu'Oli remplacera à la main, OU laisse vide.
+- Pas d'emoji dans le texte (looks template-y)
+
+### Ne fais PAS
+
+- Pas plus d'1 DM par business (1 IG OU 1 Messenger, pas les deux)
+- Pas de DM si le business n'a pas de présence IG/FB active (regarde s'ils ont posté dans les 30 derniers jours, sinon skip)
+- Pas de DM pour des business qui ont déjà été contactés par email (`contacted_domains` te dit)
+
+## 7. Vérifier l'installation
 
 Après avoir créé le skill:
 
@@ -233,14 +272,14 @@ Le fichier devrait exister et faire entre 4 et 8 KB.
 
 Puis dis à Charles-Antoine: "Skill installé. Prochaine fois que tu me demandes 'génère 10 leads de salons de coiffure à Québec', je vais suivre le pipeline auto: dedup → recherche → personnalisation → CSV sur Desktop."
 
-## 7. Liens utiles pour CA
+## 8. Liens utiles pour CA
 
 - App: https://logiccsupplies.ca/outreach/
 - Repo source: https://github.com/olimartel6/loggic-outreach
 - Repo landing (où l'app est servie): https://github.com/olimartel6/logiccsupplies-landing
 - Supabase dashboard: https://supabase.com/dashboard/project/tytfjnlclvmsjaofpnmq
 
-## 8. À garder en tête
+## 9. À garder en tête
 
 - L'anon key Supabase dans ce doc est PUBLIQUE par design (RLS protège tout)
 - Les vrais secrets (DB password, encryption_key, service_role_key) sont chez Oli dans `~/Desktop/loggic-outreach/.env.prod` — tu n'en as pas besoin pour le workflow leads

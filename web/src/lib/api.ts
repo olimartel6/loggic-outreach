@@ -65,8 +65,8 @@ export const leadsApi = {
 }
 
 export const mailboxesApi = {
-  mine: async (userId: string): Promise<Mailbox | null> => {
-    const { data, error } = await supabase.from('mailboxes').select('*').eq('user_id', userId).maybeSingle()
+  mine: async (userId: string): Promise<Mailbox[]> => {
+    const { data, error } = await supabase.from('mailboxes').select('*').eq('user_id', userId).order('created_at', { ascending: true })
     if (error) throw error
     return data
   },
@@ -93,11 +93,17 @@ export const statsApi = {
 }
 
 export const settingsApi = {
+  listMine: async (userId: string): Promise<Mailbox[]> => {
+    const { data, error } = await supabase.from('mailboxes').select('*').eq('user_id', userId).order('created_at', { ascending: true })
+    if (error) throw error
+    return data
+  },
   upsertMailbox: async (input: {
     display_name: string, email: string,
     smtp_host: string, smtp_port: number, smtp_user: string, smtp_pass: string,
     imap_host: string, imap_port: number, imap_user: string, imap_pass: string,
-    daily_limit: number,
+    daily_limit?: number,
+    mailbox_id?: string,
   }) => {
     const { data, error } = await supabase.rpc('upsert_mailbox', {
       p_display_name: input.display_name,
@@ -110,9 +116,14 @@ export const settingsApi = {
       p_imap_port: input.imap_port,
       p_imap_user: input.imap_user,
       p_imap_pass: input.imap_pass,
-      p_daily_limit: input.daily_limit,
+      p_daily_limit: input.daily_limit ?? 5,
+      p_mailbox_id: input.mailbox_id ?? undefined,
     })
     if (error) throw error
     return data
+  },
+  deleteMailbox: async (id: string) => {
+    const { error } = await supabase.rpc('delete_mailbox', { p_mailbox_id: id })
+    if (error) throw error
   },
 }
