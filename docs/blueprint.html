@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Loggic Outreach — Blueprint</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #cbd5e1;
+    --indigo: #4f46e5;
+    --indigo-soft: #eef2ff;
+    --green: #16a34a;
+    --green-soft: #f0fdf4;
+    --amber: #d97706;
+    --amber-soft: #fef3c7;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --slate-soft: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 24px; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; color: var(--ink); line-height: 1.5; }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin: 0 0 32px; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 32px; padding: 14px 18px; background: var(--card); border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+  .pipeline { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .stage { background: var(--card); border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.05); padding: 20px 22px; position: relative; }
+  .stage-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 16px; }
+  .stage-num { width: 28px; height: 28px; border-radius: 8px; background: var(--indigo-soft); color: var(--indigo); font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .stage-title-row { display: flex; align-items: center; gap: 12px; flex: 1; }
+  .stage-title { font-weight: 600; font-size: 16px; }
+  .stage-meta { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .badge.indigo { background: var(--indigo-soft); color: var(--indigo); }
+  .badge.green { background: var(--green-soft); color: var(--green); }
+  .badge.amber { background: var(--amber-soft); color: var(--amber); }
+  .badge.red { background: var(--red-soft); color: var(--red); }
+  .badge.slate { background: var(--slate-soft); color: var(--muted); }
+  .stage-body { font-size: 13px; color: #334155; }
+  .stage-body strong { color: var(--ink); }
+  .components { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .component { font-size: 11px; padding: 5px 10px; border-radius: 6px; background: var(--slate-soft); color: var(--muted); font-family: ui-monospace, "SF Mono", monospace; }
+  .component.db { background: #eff6ff; color: #1d4ed8; }
+  .component.fn { background: #fdf4ff; color: #a21caf; }
+  .component.ext { background: #fef3c7; color: #92400e; }
+  .arrow { text-align: center; font-size: 24px; color: var(--line); margin: -6px 0; user-select: none; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
+  .panel { background: var(--card); border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+  .panel-title::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: var(--indigo); }
+  .panel ul { margin: 0; padding-left: 18px; font-size: 12px; color: #475569; }
+  .panel li { margin: 5px 0; }
+  .panel li code { background: var(--slate-soft); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); text-align: center; }
+  .data-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Loggic Outreach — Blueprint du système email</h1>
+<p class="subtitle">Comment un prospect passe de "idée dans Hermes" à "email livré + dedup tracké", end-to-end. Chaque étape, chaque table, chaque cron.</p>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-swatch" style="background: #eff6ff"></span>Table DB</div>
+  <div class="legend-item"><span class="legend-swatch" style="background: #fdf4ff"></span>Edge Function</div>
+  <div class="legend-item"><span class="legend-swatch" style="background: #fef3c7"></span>Service externe</div>
+  <div class="legend-item"><span class="legend-swatch" style="background: var(--slate-soft)"></span>Action humaine</div>
+  <div class="legend-item"><span class="legend-swatch" style="background: var(--indigo-soft)"></span>Cron / automation</div>
+</div>
+
+<div class="pipeline">
+
+<!-- STAGE 1 -->
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-title-row"><div class="stage-num">1</div><div class="stage-title">Génération des prospects par Hermes (IA)</div></div>
+    <div class="stage-meta">Action humaine + IA</div>
+  </div>
+  <div class="stage-body">
+    Toi ou CA dit à votre Claude/Hermes: <strong>"génère 10 leads de salons à Lévis"</strong>. L'IA fait Firecrawl → trouve les vraies adresses → écrit un <code>custom_subject</code> et <code>custom_body</code> uniques par prospect → POST direct à l'app. Pas de CSV manuel.
+    <div class="components">
+      <span class="component">Hermes / Claude Code</span>
+      <span class="component fn">POST /submit-leads</span>
+      <span class="component db">leads (status=draft)</span>
+    </div>
+  </div>
+</div>
+<div class="arrow">↓</div>
+
+<!-- STAGE 2 -->
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-title-row"><div class="stage-num">2</div><div class="stage-title">Review humaine + activation</div></div>
+    <div class="stage-meta">Validation 5 min / batch</div>
+  </div>
+  <div class="stage-body">
+    Toi (ou CA) ouvre <code>CampaignDetail</code> dans l'app → section <strong>Brouillons</strong> → lit chaque email perso → "Rejeter" si moche, "Tout activer" si OK. Au moment du activer, démos auto-construites en arrière-plan.
+    <div class="components">
+      <span class="component">UI: /campaigns/:id</span>
+      <span class="component db">leads (status=queued)</span>
+      <span class="component fn">POST /build-demos</span>
+    </div>
+  </div>
+</div>
+<div class="arrow">↓</div>
+
+<!-- STAGE 3 -->
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-title-row"><div class="stage-num">3</div><div class="stage-title">Construction de démos personnalisées</div></div>
+    <div class="stage-meta">Auto / instant</div>
+  </div>
+  <div class="stage-body">
+    Pour chaque lead sans <code>demo_link</code>: slugify(company) → INSERT dans <code>loyalty_businesses</code> du projet Loyalty SaaS (différent Supabase project!) → écris <code>demo_link = https://demo.logiccsupplies.ca/?tenant=&lt;slug&gt;</code>. Pas de rebuild, pas de gh-pages — juste 2 INSERT/UPDATE.
+    <div class="components">
+      <span class="component fn">build-demos</span>
+      <span class="component db">loyalty_businesses (bulk-coach)</span>
+      <span class="component db">leads.demo_link</span>
+    </div>
+  </div>
+</div>
+<div class="arrow">↓</div>
+
+<!-- STAGE 4 -->
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-title-row"><div class="stage-num">4</div><div class="stage-title">Sélection atomique du prochain lead</div></div>
+    <div class="stage-meta">Cron */2 min</div>
+  </div>
+  <div class="stage-body">
+    <code>send-tick</code> fire toutes les 2 min. Pour chaque mailbox active: vérifie limite quotidienne (5/jour défaut, éditable Settings), vérifie horaire (Lun-Ven 8h-17h défaut), puis appel <code>claim_next_lead()</code> qui fait <strong>SELECT ... FOR UPDATE SKIP LOCKED</strong> — race-safe, pas de double envoi même si 2 ticks lancent en parallèle.
+    <div class="components">
+      <span class="component fn">send-tick (cron */2min)</span>
+      <span class="component db">claim_next_lead RPC</span>
+      <span class="component db">mailboxes.daily_limit</span>
+      <span class="component db">campaigns.schedule</span>
+    </div>
+  </div>
+</div>
+<div class="arrow">↓</div>
+
+<!-- STAGE 5 -->
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-title-row"><div class="stage-num">5</div><div class="stage-title">Render + envoi SMTP</div></div>
+    <div class="stage-meta">~3-8 min jitter / mailbox</div>
+  </div>
+  <div class="stage-body">
+    Decrypt SMTP password via <code>pgcrypto</code> (clé dans <code>private.app_secrets</code>). Render <code>{custom_subject}</code> et <code>{custom_body}</code> avec les variables du lead. Threading: si étape 2+, ajoute headers In-Reply-To. Connexion SMTP TLS port 465 (Spacemail) → <code>sendEmail()</code>. Headers Gmail-friendly: List-Unsubscribe mailto (signal pas-bulk).
+    <div class="components">
+      <span class="component ext">Spacemail SMTP 465</span>
+      <span class="component db">private.app_secrets (encryption_key)</span>
+      <span class="component">templates.ts render</span>
+    </div>
+  </div>
+</div>
+<div class="arrow">↓</div>
+
+<!-- STAGE 6 -->
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-title-row"><div class="stage-num">6</div><div class="stage-title">Logging + avancement du lead</div></div>
+    <div class="stage-meta">Transactionnel</div>
+  </div>
+  <div class="stage-body">
+    INSERT dans <code>sends</code> avec <code>status=sent</code> + Message-ID retourné par SMTP. UPDATE lead: <code>current_step++</code>, <code>thread_message_id</code>, <code>last_subject</code>, <code>next_send_at</code> = (delay du prochain step) + jitter aléatoire. Si plus d'étapes → <code>status=completed</code>. Unique index <code>(lead_id, step_id) where status=sent</code> bloque les doublons accidentels.
+    <div class="components">
+      <span class="component db">sends (audit trail)</span>
+      <span class="component db">leads (current_step, next_send_at)</span>
+      <span class="component db">jitter_next_for_mailbox RPC</span>
+    </div>
+  </div>
+</div>
+<div class="arrow">↓</div>
+
+<!-- STAGE 7 -->
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-title-row"><div class="stage-num">7</div><div class="stage-title">Détection des réponses + bounces</div></div>
+    <div class="stage-meta">Cron */10 min</div>
+  </div>
+  <div class="stage-body">
+    <code>imap-poll</code> fire toutes les 10 min. Pour chaque mailbox: connexion IMAP TLS, fetch messages depuis <code>last_imap_uid_seen</code>. Pour chaque nouveau message: extract In-Reply-To/References headers → match contre <code>leads.thread_message_id</code> (filtré par mailbox_id du lead pour éviter cross-campaign). Si match: <code>status=replied</code>. Si sender ressemble à mailer-daemon ou sujet contient "Delivery Status Notification" → <code>status=bounced</code>. Auto-stop séquence.
+    <div class="components">
+      <span class="component fn">imap-poll (cron */10min)</span>
+      <span class="component ext">Spacemail IMAP 993</span>
+      <span class="component db">leads (status=replied/bounced)</span>
+      <span class="component db">replies (audit)</span>
+    </div>
+  </div>
+</div>
+
+</div> <!-- /pipeline -->
+
+<!-- BOTTOM LANES -->
+<div class="grid">
+
+<div class="panel">
+  <div class="panel-title">Reliability</div>
+  <ul>
+    <li><strong>Atomic claim</strong> — <code>FOR UPDATE SKIP LOCKED</code> empêche double-envoi sur ticks concurrents</li>
+    <li><strong>Retry exponentiel</strong> — 3 retries (5min → 15min → 60min) avant FAIL définitif</li>
+    <li><strong>Unclaim sur erreur</strong> — lead libéré du mailbox errored, repris par autre mailbox active</li>
+    <li><strong>Telegram alerts dedupliquées</strong> — crash, decrypt fail, FAIL final, mailbox status=error. Window 15 min same hash</li>
+    <li><strong>Idempotent post-send</strong> — si SMTP succeeded mais DB crash, recovery via lastSend check</li>
+  </ul>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Sécurité</div>
+  <ul>
+    <li><strong>Encryption mailbox creds</strong> — pgcrypto AES sym, clé dans <code>private.app_secrets</code></li>
+    <li><strong>RLS partout</strong> — campaigns/leads readable par authenticated, sends/replies read-only via service_role</li>
+    <li><strong>Whitelist auth</strong> — magic link, seulement 3 emails autorisés à créer un compte</li>
+    <li><strong>Submission token</strong> — auth pour Hermes/UI sur <code>/submit-leads</code>, <code>/build-demos</code>, <code>/submit-dm-drafts</code></li>
+    <li><strong>Audit log</strong> — triggers sur campaigns/sequence_steps/mailboxes, RLS restreint à 1 admin</li>
+    <li><strong>Rotation scripts</strong> — <code>rotate-submission-token.py --yes</code>, <code>rotate-encryption-key.py</code> (atomique)</li>
+  </ul>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Observabilité</div>
+  <ul>
+    <li><code>/healthcheck</code> — 200 si heartbeat &lt;5min ET &lt;50% mailboxes en error (pingable UptimeRobot, no JWT)</li>
+    <li><code>/daily-summary</code> — cron 22h UTC, push Telegram: envoyés/réponses/bounces/failed/queue/mailboxes</li>
+    <li><code>audit_log</code> table — qui a fait quoi quand sur les campagnes</li>
+    <li><code>sends</code> + <code>replies</code> tables — historique complet pour analytics</li>
+    <li>Function logs Supabase — accessibles via Management API analytics endpoint</li>
+  </ul>
+</div>
+
+</div>
+
+<!-- DATA MODEL -->
+<div class="panel" style="margin-top: 32px;">
+  <div class="panel-title">Tables principales</div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 12px;">
+    <div><strong>campaigns</strong><br><span style="color:var(--muted)">name, status, schedule (jours/heures/limite), created_by</span></div>
+    <div><strong>sequence_steps</strong><br><span style="color:var(--muted)">campaign_id, step_order, delay_days, subject_template, body_template</span></div>
+    <div><strong>leads</strong><br><span style="color:var(--muted)">email, company, status (draft/queued/replied/bounced/completed/failed), current_step, next_send_at, retry_count, demo_link, custom_subject, custom_body, thread_message_id</span></div>
+    <div><strong>mailboxes</strong><br><span style="color:var(--muted)">user_id, email, smtp+imap host/port/user/pass_encrypted, daily_limit, status, last_imap_uid_seen, last_error</span></div>
+    <div><strong>sends</strong><br><span style="color:var(--muted)">lead_id, step_id, mailbox_id, sent_at, smtp_message_id, status (sent/failed), error_text</span></div>
+    <div><strong>replies</strong><br><span style="color:var(--muted)">lead_id, mailbox_id, detected_at, imap_uid, snippet</span></div>
+    <div><strong>dm_drafts</strong><br><span style="color:var(--muted)">business_name, channel (IG/Messenger/LinkedIn), draft_text, status (pending/sent/skipped)</span></div>
+    <div><strong>audit_log</strong><br><span style="color:var(--muted)">ts, user_email, action, target_table, target_id, details</span></div>
+    <div><strong>private.app_secrets</strong><br><span style="color:var(--muted)">key, value (encryption_key, functions_url, service_role_key, submission_token, telegram_*)</span></div>
+    <div><strong>contacted_domains (view)</strong><br><span style="color:var(--muted)">domain (dedup union leads + dm_drafts sent)</span></div>
+  </div>
+</div>
+
+<div class="footer">
+  Blueprint generated 2026-05-31 • Supabase ref tytfjnlclvmsjaofpnmq (ca-central-1) • Frontend logiccsupplies.ca/outreach/ • Source github.com/olimartel6/loggic-outreach
+</div>
+
+</div>
+</body>
+</html>
