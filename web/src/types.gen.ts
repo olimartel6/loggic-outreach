@@ -125,6 +125,7 @@ export type Database = {
       mailboxes: {
         Row: {
           created_at: string
+          daily_limit: number
           display_name: string
           email: string
           id: string
@@ -144,6 +145,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          daily_limit?: number
           display_name: string
           email: string
           id?: string
@@ -163,6 +165,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          daily_limit?: number
           display_name?: string
           email?: string
           id?: string
@@ -332,6 +335,7 @@ export type Database = {
       test_encrypt_helper: { Args: { plain: string }; Returns: string }
       upsert_mailbox: {
         Args: {
+          p_daily_limit?: number
           p_display_name: string
           p_email: string
           p_imap_host: string
