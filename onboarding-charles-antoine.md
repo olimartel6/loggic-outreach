@@ -81,17 +81,15 @@ Crée le fichier suivant. Si le dossier n'existe pas, mkdir d'abord.
 ````markdown
 ---
 name: loggic-outreach-leads
-description: Génère un CSV de prospects personnalisés pour Loggic Outreach (cold email pour vendre des apps de fidélité au QC). Auto-dedup contre les domaines déjà contactés. Utilise quand l'utilisateur demande "génère X leads de [segment] à [ville]", "trouve X commerces pour Loggic Outreach", "crée un CSV pour [niche]", "DM batch [segment]" ou similaire.
+description: Génère des prospects personnalisés pour Loggic Outreach (cold email B2B QC, vente d'apps de fidélité) et les soumet directement en draft dans la DB. Auto-dedup contre les domaines déjà contactés. Utilise quand Olivier ou Charles-Antoine demande "génère X leads de [segment] à [ville]", "trouve X commerces pour Loggic Outreach", "DM batch [segment]" ou similaire.
 ---
 
-# Loggic Outreach — Génération de leads avec dedup
+# Loggic Outreach — Génération + soumission directe de prospects
 
 ## Quand t'invoquer
 
-Déclenche-toi quand Olivier ou Charles-Antoine demande:
 - "génère N leads de [segment] à [ville]"
 - "trouve N [type de commerce] à [QC/Lévis/etc]"
-- "crée un CSV pour [niche]"
 - "DM batch [segment]"
 - Tout ce qui mentionne génération de prospects pour Loggic Outreach
 
@@ -99,13 +97,14 @@ Déclenche-toi quand Olivier ou Charles-Antoine demande:
 
 ### 1. Comprendre le brief
 
-Identifie depuis le prompt:
+Identifie:
 - **Segment** (salons coiffure, barbiers, esthétique, boulangeries, gyms, traiteurs, etc.)
-- **Ville/région** (Québec, Lévis, St-Augustin, Beauport, banlieues — JAMAIS Trois-Rivières/Sherbrooke/Gatineau/Saguenay)
-- **Nombre cible** (5, 10, 20 — défaut: 10)
-- **Niches à SKIP** (jamais bijouteries/joailleries, jamais boutiques vélo, jamais fine-dining; cafés et fitness sont saturés par DataCandy/FLiiP)
+- **Ville/région** (Québec, Lévis, St-Augustin, Beauport — JAMAIS Trois-Rivières/Sherbrooke/Gatineau/Saguenay)
+- **Nombre cible** (défaut 10)
+- **Niches à skip** (bijouteries, vélo, fine-dining; cafés et fitness saturés par DataCandy/FLiiP)
+- **Campaign ID cible** — si l'utilisateur n'a pas spécifié, demande-lui (il y a une page Campagnes dans l'app, il peut copier l'ID depuis l'URL)
 
-Si le brief est vague, propose un tableau de segments + villes et demande confirmation avant de continuer.
+Si le brief est vague, propose 2-3 segments + villes en tableau et demande confirmation.
 
 ### 2. Fetch la dedup list
 
@@ -115,84 +114,112 @@ curl -s 'https://tytfjnlclvmsjaofpnmq.supabase.co/rest/v1/contacted_domains?sele
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5dGZqbmxjbHZtc2phb2Zwbm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjY5NDQsImV4cCI6MjA5NTc0Mjk0NH0.AESgQ5sxjzYyQHIZj6tNp5vCJd0Mfkve_KKVFF2t8Ok'
 ```
 
-Garde la liste de domaines en tête. Tu vas devoir matcher CHAQUE prospect contre.
-
 ### 3. Trouver les prospects
 
-Utilise Firecrawl (skills `firecrawl-search`, `firecrawl-scrape`, `firecrawl-agent`) ou WebSearch si Firecrawl indispo. Sources fréquentes:
-- Google: `"site:[ville] [segment]"` ou `"[segment] [ville] facebook"`
-- FB Pages locales
-- Yelp QC
-- Bing pour les widgets Instagram CDN
+Utilise Firecrawl ou WebSearch. Pour chaque candidat: email RÉEL (jamais inventé), prénom du propriétaire, site web, slug. Si pas de vrai email → SKIP ce prospect (ne le mets pas en `EMAIL_TBD`, il sert à rien tant qu'on a pas l'email).
 
-Pour chaque candidat: extrais email, téléphone, propriétaire/manager (prénom), site web, slug du business.
+### 4. Dedup par domaine
 
-**JAMAIS inventer un email `info@domain.com`.** Si tu trouves pas le vrai email, mets `EMAIL_TBD` dans la cellule et indique-le clairement dans le rapport final.
+Pour chaque prospect: si `email.split('@')[1].toLowerCase()` est dans la dedup list → SKIP avec log "skipped: [nom] — déjà contacté".
 
-### 4. Dedup
+### 5. Personnaliser le `custom_subject` + `custom_body` — RÈGLES STRICTES
 
-Pour chaque prospect:
-1. Extrais le domaine de son email (`split('@')[1].toLowerCase()`)
-2. Si le domaine est dans la dedup list → **SKIP** (ne l'ajoute pas au CSV, log "skipped: [nom] — déjà contacté")
-3. Sinon → continue
+**Format du custom_subject:**
+- 4 à 8 mots
+- Mentionne quelque chose de SPÉCIFIQUE au business (nom, quartier, service signature)
+- Pas de mots clichés ("opportunité", "transformer", "révolutionner")
 
-Si tu skips trop (>50% du batch), prends note et propose un autre segment ou ville à Oli/CA.
+**Bons exemples de sujet:**
+- "Pour Marie — petit truc pour Borderon"
+- "Une idée vue chez votre voisin Salon Diana"
+- "Question rapide sur votre offre de gel polish"
 
-### 5. Personnaliser le custom_subject et custom_body
+**Mauvais exemples (à ÉVITER):**
+- "Une opportunité pour votre business" — générique
+- "Augmentez vos ventes de 30%!" — vendeur, faux chiffre
+- "Bonjour" — vide
 
-**Pour chaque prospect retenu**, écris un email comme un humain l'écrirait. Pas de template feel.
+**Format du custom_body:**
+- 3 à 6 phrases (max ~600 caractères)
+- 1ère phrase: mentionne quelque chose de spécifique au business (un service vu sur leur site, un détail Google Maps, un quartier, une couleur de leur logo, etc.). PAS "j'ai vu votre business" ni "je passais par là".
+- 2-3 phrases au milieu: explique en 1 phrase ce que fait l'app de fidélité (carte de points sur le téléphone pour leurs clients). Pas de jargon SaaS.
+- Dernière phrase: CTA — propose un appel court (5 min) OU demande simplement une réponse si intéressé. PAS de lien démo. PAS de prix.
+- Signature: `Olivier — Loggic` (si Oli demande) ou `Charles-Antoine — Loggic` (si CA demande)
 
-**Règles de ton:**
-- Français québécois casual mais professionnel
-- Accents proprement (à, é, è, ç) — JAMAIS sans accents
-- "tu" pas "vous" pour des commerces de proximité
-- Court (3-6 phrases max le custom_body)
-- Mentionne UN détail spécifique au business (un service, un avis client, un quartier, un produit, l'année de fondation, etc.) — pas de "j'ai vu votre business"
-- CTA: proposer un échange court (5 min, Zoom ou téléphone) ou demander une réponse — PAS "voir une démo" car le lien démo se rajoute après
-- Signature: `Olivier — Loggic` (ou `Charles-Antoine — Loggic` selon qui demande)
+**Bon exemple de body (Sophie chez Urbania Beauté):**
+```
+Salut Sophie, j'ai jeté un œil à votre offre de microblading sur Urbania et le look "duvet de cils" sur votre page — c'est solide.
 
-**`demo_link`: laisse TOUJOURS vide.** Oli build les démos personnalisées en batch après réception du CSV (séparation des responsabilités: génération de prospects = ton job, construction de démos = job d'Oli sur son Mac où le repo `logicsupplies` est installé). Ne mentionne PAS de lien démo dans le `custom_body` non plus, sinon ça crée une référence à un truc qui n'existe pas.
+J'ai bâti une app de fidélité simple (carte de points sur le tél des clientes, fonctionne par texto, pas d'install) pour des commerces comme le tien à Québec. Quelques esthéticiennes l'utilisent déjà au Lévis.
+
+Si jamais ça t'intrigue, dis-moi et je t'écris en plus de détails — sinon ignore.
+
+Olivier — Loggic
+```
+
+**Mauvais exemple à ne PAS faire:**
+```
+Bonjour Sophie, j'ai remarqué que votre business est sur Instagram. Saviez-vous qu'une app de fidélité peut augmenter vos ventes de 30%? Notre solution est la meilleure du marché. Cliquez ici pour voir une démo: [LIEN]. Merci, Olivier.
+```
+Générique, prétention chiffrée, lien démo, ton vendeur.
 
 **JAMAIS:**
-- Mentionner un prix dans le custom_body (politique stricte Oli)
+- Mentionner un prix
 - Dire "j'ai remarqué que vous n'avez pas X mais que Y" (ton condescendant, banni)
 - Inventer des stats ou des features
-- Inventer un `demo_link` ou pointer vers `demo.logiccsupplies.ca` sans vérifier — laisse VIDE
+- Référencer un demo_link (laisse vide — Oli build les démos en batch après)
+- Utiliser "vous" — toujours "tu" pour des commerces de proximité QC
+- Émojis dans le sujet
 
-**Custom_subject:** 5-9 mots, accroche spécifique. Exemples:
-- "Une question pour {nom du commerce}"
-- "Pour {nom propriétaire} — petite idée"
-- "À propos de votre {service spécifique}"
+### 6. Soumettre directement à la DB (PAS de CSV)
 
-### 6. Écrire le CSV
+```bash
+TOKEN="SUBMISSION_TOKEN_HERE"  # Voir section 5bis de l'onboarding pour le vrai token
+CAMPAIGN_ID="UUID_DE_LA_CAMPAGNE_CIBLE"
 
-**Path:** `~/Desktop/leads-<segment-slug>-<YYYY-MM-DD>.csv`
-
-**Format:** UTF-8, première ligne = header. Colonnes dans cet ordre exact:
-
+curl -X POST 'https://tytfjnlclvmsjaofpnmq.supabase.co/functions/v1/submit-leads' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "campaign_id": "'$CAMPAIGN_ID'",
+    "submitted_by": "Hermes (CA)",
+    "leads": [
+      {
+        "email": "sophie@urbaniabeaute.com",
+        "first_name": "Sophie",
+        "company": "Urbania Beauté",
+        "custom_subject": "Pour Sophie — petit truc pour Urbania",
+        "custom_body": "Salut Sophie, j'ai jeté un œil à...\n\nOlivier — Loggic"
+      }
+    ]
+  }'
 ```
-email,first_name,last_name,company,demo_link,custom1,custom_subject,custom_body
-```
 
-Le `custom_body` peut contenir des sauts de ligne — entoure la cellule de guillemets doubles et double les guillemets internes. Papaparse côté frontend gère ça.
+Réponse: `{"ok":true,"inserted":N,"skipped_duplicates":N}`.
+
+Les leads atterrissent en `status='draft'` — visibles dans CampaignDetail sous "Brouillons", en attente que Oli/CA cliquent "Tout activer". DÈS qu'ils sont insérés, ils comptent dans `contacted_domains` — pas de risque de doublon entre sessions.
 
 ### 7. Rapport final à l'utilisateur
 
-Termine ton tour avec:
-- Combien de prospects trouvés au total
-- Combien skipped par dedup (avec leurs noms)
-- Combien dans le CSV final
-- Path absolu du CSV
-- Combien ont `EMAIL_TBD` (à compléter manuellement)
-- Suggestion de prochaine batch si volume insuffisant
+- Combien trouvés / skipped dedup / soumis en draft
+- Lien direct vers la campagne: `https://logiccsupplies.ca/outreach/#/campaigns/<CAMPAIGN_ID>`
+- Suggestion: "Va activer les brouillons quand t'es prêt"
 
 ## Ne fais PAS
 
-- N'importe pas le CSV automatiquement dans l'app — c'est Oli ou CA qui drag-drop dans CampaignDetail manuellement (validation humaine avant envoi)
-- Ne lance pas send-tick manuellement
-- Ne touche pas à la DB prod
-- Ne crée pas de nouvelles campagnes sans demander
+- Ne crée pas le CSV (ancien workflow, déprécié)
+- Ne change pas le statut des leads (Oli/CA le fait via l'UI)
+- Ne crée pas de nouvelles campagnes
+- N'utilise PAS le SUBMISSION_TOKEN ailleurs que pour `/submit-leads`
 ````
+
+## 5bis. Token de soumission
+
+Le skill ci-dessus utilise un `SUBMISSION_TOKEN` pour pousser des drafts dans la DB. Avant de sauvegarder le skill, remplace la ligne `TOKEN="SUBMISSION_TOKEN_HERE"` par:
+
+`SUBMISSION_TOKEN=<PASTE_TOKEN_HERE>`
+
+Oli te passera la vraie valeur via Telegram ou un autre canal sécurisé. Si tu ne l'as pas, demande-la avant de continuer — ne génère pas de prospects sans, sinon l'API refuse les appels (401).
 
 ## 6. Vérifier l'installation
 

@@ -61,6 +61,21 @@ Fresh outreach setups land in spam by default until the sender domain builds rep
 
 If you (Claude) are asked to bump the limit early, push back: "the cron / mailbox limit isn't the bottleneck — Gmail spam classification is. Ramp slowly."
 
+## When Hermes/CA's agent submits drafts via /submit-leads
+
+The submission flow is preferred over CSV-import for cross-session dedup. Drafts:
+- Land in `leads` with `status='draft'` → immediately count in `contacted_domains` (other Claude sessions won't re-pitch them)
+- Are visible in CampaignDetail under a "Brouillons" section above the regular leads
+- Become real queued leads only after Oli (or CA) clicks "Tout activer"
+- Carry a `custom1` field with provenance info like `[via Hermes (CA)]` so you know who proposed them
+
+Edge function: `POST https://tytfjnlclvmsjaofpnmq.supabase.co/functions/v1/submit-leads`
+Auth: `Authorization: Bearer <submission_token>` (token is in `private.app_secrets.value where key='submission_token'`, also mirrored in `~/Desktop/loggic-outreach/.env.prod` as `SUBMISSION_TOKEN=`)
+Body: `{ campaign_id: uuid, leads: [{email, first_name?, last_name?, company?, custom_subject?, custom_body?, ...}], submitted_by?: "Hermes (CA)" }`
+Response: `{ ok, inserted, skipped_duplicates }`
+
+Drafts that share `(campaign_id, email)` with an existing lead are silently skipped via `ignoreDuplicates`. The send-tick cron only picks up `status in ('queued', 'in_progress')`, so drafts are never sent until approved.
+
 ## DNS records (manual, do NOT auto-change)
 
 - SPF: `v=spf1 include:spf.spacemail.com ~all` (on logiccsupplies.ca) — correct
